@@ -27,7 +27,7 @@ DEBUG = True
 
 #add local host to allowed origin
 
-ALLOWED_HOSTS = ["smartfiling.princeshipping.co.zw,", "127.0.0.1"]
+ALLOWED_HOSTS = ["smartfiling.princeshipping.co.zw,", "127.0.0.1","remail.pythonanywhere.com" ]
 
 
 # Application definition
