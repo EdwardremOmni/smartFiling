@@ -14,7 +14,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for bill_of_entry in bills_of_entry %}
+      {% for bill_of_entry in page_obj %}
       <tr>
         <td class="fw-semibold">{{ bill_of_entry.importer.name }}</td>
         <td>{{ bill_of_entry.entry_number }}</td>
@@ -58,3 +58,5 @@
     </tbody>
   </table>
 </div>
+
+{% include 'partials/_pagination.html' %}

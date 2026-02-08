@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.db import IntegrityError
 import json
 from django.urls import reverse
+from django.core.paginator import Paginator
 
 
 
@@ -49,6 +50,19 @@ def _clean(value: str) -> str:
 
 def _is_manager(user) -> bool:
     return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+
+
+DEFAULT_PER_PAGE = 50
+PER_PAGE_CHOICES = {10, 25, 50, 100}
+
+
+def _get_per_page(request) -> int:
+    raw = request.GET.get('per_page')
+    try:
+        value = int(raw) if raw else DEFAULT_PER_PAGE
+    except (TypeError, ValueError):
+        value = DEFAULT_PER_PAGE
+    return value if value in PER_PAGE_CHOICES else DEFAULT_PER_PAGE
 
 
 def _forbid_unless_manager(request):
@@ -105,7 +119,18 @@ def user_list(request):
         elif q_lower in {'user', 'users'}:
             users = users.filter(is_staff=False)
 
-    context = {'users': users, 'query': query, 'title': 'Users'}
+    per_page = _get_per_page(request)
+    paginator = Paginator(users, per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    context = {
+        'users': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'per_page': per_page,
+        'title': 'Users',
+        'base_url': reverse('user_list'),
+        'target_id': 'user-table',
+    }
     if _is_htmx(request) and _hx_target(request) == 'user-table':
         return render(request, 'partials/users/_table.html', context)
     return _render_htmx(request, 'users/user_list.html', 'partials/users/user_list.html', context)
@@ -258,7 +283,18 @@ def importer_list(request):
     if query:
         importers = importers.filter(name__icontains=query)  # Filter importers by name (case-insensitive)
 
-    context = {'importers': importers, 'query': query, 'title': 'Importers'}
+    per_page = _get_per_page(request)
+    paginator = Paginator(importers.order_by('-created_on'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    context = {
+        'importers': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'per_page': per_page,
+        'title': 'Importers',
+        'base_url': reverse('importer_list'),
+        'target_id': 'importer-table',
+    }
     if _is_htmx(request) and _hx_target(request) == 'importer-table':
         return render(request, 'partials/importers/_table.html', context)
     return _render_htmx(request, 'importers/importer_list.html', 'partials/importers/importer_list.html', context)
@@ -346,7 +382,18 @@ def bill_of_entry_list(request):
             | Q(description__icontains=query)
         )
 
-    context = {'bills_of_entry': bills_of_entry, 'query': query, 'title': 'Bills of Entry'}
+    per_page = _get_per_page(request)
+    paginator = Paginator(bills_of_entry.order_by('-created_on'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    context = {
+        'bills_of_entry': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'per_page': per_page,
+        'title': 'Bills of Entry',
+        'base_url': reverse('bill_of_entry_list'),
+        'target_id': 'bill-table',
+    }
     if _is_htmx(request) and _hx_target(request) == 'bill-table':
         return render(request, 'partials/bills/_table.html', context)
     return _render_htmx(request, 'bills/bill_of_entry_list.html', 'partials/bills/bill_of_entry_list.html', context)
@@ -579,7 +626,18 @@ def internal_document_list(request):
             | Q(description__icontains=query)
         )
 
-    context = {'internal_documents': internal_documents, 'query': query, 'title': 'Documents'}
+    per_page = _get_per_page(request)
+    paginator = Paginator(internal_documents.order_by('-created_on'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    context = {
+        'internal_documents': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'per_page': per_page,
+        'title': 'Documents',
+        'base_url': reverse('internal_document_list'),
+        'target_id': 'doc-table',
+    }
     if _is_htmx(request) and _hx_target(request) == 'doc-table':
         return render(request, 'partials/docs/_table.html', context)
     return _render_htmx(
@@ -737,7 +795,18 @@ def agreement_list(request):
     if query:
         agreements = agreements.filter(Q(importer__name__icontains=query) | Q(company_name__icontains=query))
 
-    context = {'agreements': agreements, 'query': query, 'title': 'Agreements'}
+    per_page = _get_per_page(request)
+    paginator = Paginator(agreements.order_by('-created_on'), per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    context = {
+        'agreements': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'per_page': per_page,
+        'title': 'Agreements',
+        'base_url': reverse('agreement_list'),
+        'target_id': 'agreement-table',
+    }
     if _is_htmx(request) and _hx_target(request) == 'agreement-table':
         return render(request, 'partials/agreements/_table.html', context)
     return _render_htmx(request, 'agreements/agreement_list.html', 'partials/agreements/agreement_list.html', context)

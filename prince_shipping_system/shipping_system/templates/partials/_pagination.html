@@ -1,0 +1,107 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+  {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+    {% with lower=current|add:"-2" upper=current|add:"2" total_minus_1=total|add:"-1" %}
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+        <div class="text-muted small">
+          Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+          <span class="ms-2">({{ per_page|default:50 }} per page)</span>
+        </div>
+
+        <nav aria-label="Pagination">
+          <ul class="pagination pagination-sm mb-0">
+            {# First / Prev #}
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+              <a
+                class="page-link"
+                href="{{ base_url }}?page=1&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                hx-boost="false"
+                hx-get="{{ base_url }}?page=1&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                hx-target="#{{ target_id }}"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                aria-label="First"
+              >
+                «
+              </a>
+            </li>
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+              {% if page_obj.has_previous %}
+                <a
+                  class="page-link"
+                  href="{{ base_url }}?page={{ page_obj.previous_page_number }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                  hx-boost="false"
+                  hx-get="{{ base_url }}?page={{ page_obj.previous_page_number }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                  hx-target="#{{ target_id }}"
+                  hx-swap="innerHTML"
+                  hx-push-url="true"
+                  aria-label="Previous"
+                >
+                  ‹
+                </a>
+              {% else %}
+                <span class="page-link" aria-hidden="true">‹</span>
+              {% endif %}
+            </li>
+
+            {# Page numbers with compact ellipses #}
+            {% for i in page_obj.paginator.page_range %}
+              {% if i == 1 or i == total or i >= lower and i <= upper %}
+                <li class="page-item {% if i == current %}active{% endif %}">
+                  <a
+                    class="page-link"
+                    href="{{ base_url }}?page={{ i }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                    hx-boost="false"
+                    hx-get="{{ base_url }}?page={{ i }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                    hx-target="#{{ target_id }}"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                  >
+                    {{ i }}
+                  </a>
+                </li>
+              {% elif i == 2 and lower > 3 %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% elif i == total_minus_1 and upper < total|add:"-2" %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% endif %}
+            {% endfor %}
+
+            {# Next / Last #}
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+              {% if page_obj.has_next %}
+                <a
+                  class="page-link"
+                  href="{{ base_url }}?page={{ page_obj.next_page_number }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                  hx-boost="false"
+                  hx-get="{{ base_url }}?page={{ page_obj.next_page_number }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                  hx-target="#{{ target_id }}"
+                  hx-swap="innerHTML"
+                  hx-push-url="true"
+                  aria-label="Next"
+                >
+                  ›
+                </a>
+              {% else %}
+                <span class="page-link" aria-hidden="true">›</span>
+              {% endif %}
+            </li>
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+              <a
+                class="page-link"
+                href="{{ base_url }}?page={{ total }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                hx-boost="false"
+                hx-get="{{ base_url }}?page={{ total }}&per_page={{ per_page|default:50 }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                hx-target="#{{ target_id }}"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                aria-label="Last"
+              >
+                »
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    {% endwith %}
+  {% endwith %}
+{% endif %}

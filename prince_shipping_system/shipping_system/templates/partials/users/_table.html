@@ -10,7 +10,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for user in users %}
+      {% for user in page_obj %}
       <tr>
         <td class="fw-semibold">{{ user.get_full_name|default:user.username }}</td>
         <td>{{ user.email }}</td>
@@ -52,3 +52,5 @@
     </tbody>
   </table>
 </div>
+
+{% include 'partials/_pagination.html' %}

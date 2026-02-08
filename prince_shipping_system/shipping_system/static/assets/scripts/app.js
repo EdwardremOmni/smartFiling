@@ -21,12 +21,34 @@
     return input ? (input.value || '') : '';
   }
 
+  function getPerPageFor(targetId) {
+    var select = document.querySelector('select[name="per_page"][hx-target="#' + targetId + '"]');
+    return select ? (select.value || '') : '';
+  }
+
+  function getPageFromUrl() {
+    try {
+      var sp = new URLSearchParams(window.location.search || '');
+      return sp.get('page') || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
   function refreshTableIfPresent(targetId, urlBase) {
     var el = document.getElementById(targetId);
     if (!el || !window.htmx) return;
     var q = getQueryFor(targetId);
-    var url = urlBase;
-    if (q) url += '?q=' + encodeURIComponent(q);
+    var perPage = getPerPageFor(targetId);
+    var page = getPageFromUrl();
+
+    var params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (perPage) params.set('per_page', perPage);
+    if (page) params.set('page', page);
+
+    var qs = params.toString();
+    var url = qs ? (urlBase + '?' + qs) : urlBase;
     htmx.ajax('GET', url, { target: '#' + targetId, swap: 'innerHTML' });
   }
 

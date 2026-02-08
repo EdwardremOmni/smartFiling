@@ -12,7 +12,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for agreement in agreements %}
+      {% for agreement in page_obj %}
       <tr>
         <td class="fw-semibold">{{ agreement.importer.name }}</td>
         <td>{{ agreement.company_name }}</td>
@@ -67,3 +67,5 @@
     </tbody>
   </table>
 </div>
+
+{% include 'partials/_pagination.html' %}

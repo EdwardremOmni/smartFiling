@@ -10,7 +10,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for importer in importers %}
+      {% for importer in page_obj %}
       <tr>
         <td class="fw-semibold">{{ importer.name }}</td>
         <td>{{ importer.created_on|date:"M d, Y H:i" }}</td>
@@ -42,3 +42,5 @@
     </tbody>
   </table>
 </div>
+
+{% include 'partials/_pagination.html' %}
