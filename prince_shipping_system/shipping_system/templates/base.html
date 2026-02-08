@@ -12,6 +12,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
   <link rel="stylesheet" href="{% static 'assets/styles/app.css' %}">
+
+  {# Brand icons (served from MEDIA during dev; ensure /media is served in production too) #}
+  <link rel="icon" type="image/png" href="{{ MEDIA_URL }}logo/Prince_Shipping_Logo_-_1-removebg-preview.png">
+  <link rel="apple-touch-icon" href="{{ MEDIA_URL }}logo/Prince_Shipping_Logo_-_1-removebg-preview.png">
 </head>
 <body
   style="font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Arial, sans-serif;"
@@ -23,7 +27,17 @@
   <nav class="navbar navbar-dark app-topbar sticky-top" style="height:58px;">
     <div class="container-fluid">
       <a class="navbar-brand fw-bold" href="{% url 'home' %}">
-        <i class="fas fa-ship me-2"></i>Prince Shipping
+        <span class="app-brand">
+          <img
+            src="{{ MEDIA_URL }}logo/Prince_Shipping_Logo_-_1-removebg-preview.png"
+            class="app-brand-logo"
+            alt="Prince Shipping"
+          />
+          <span class="app-brand-text">
+            <span class="d-block app-brand-title">Prince Shipping</span>
+            <span class="d-block app-brand-sub">Smart Filing</span>
+          </span>
+        </span>
       </a>
 
       {% include 'partials/_topbar_right.html' with topbar_oob=False %}

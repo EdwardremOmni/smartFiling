@@ -4,8 +4,12 @@
   --app-text: #0f172a;
   --app-muted: #64748b;
   --app-border: rgba(15,23,42,.10);
-  --app-primary: #2563eb;
-  --app-primary-2: #1d4ed8;
+  /* Brand blues extracted from media/logo */
+  --app-primary: #142882;   /* deep navy */
+  --app-primary-2: #00a8f0; /* bright cyan */
+  --app-primary-3: #103088;
+  --app-primary-soft: rgba(20, 40, 130, .12);
+  --app-accent-soft: rgba(0, 168, 240, .14);
   --app-danger: #dc2626;
   --app-radius: 16px;
   --app-shadow: 0 14px 40px rgba(2, 6, 23, .08);
@@ -18,8 +22,8 @@ html, body {
 }
 
 body {
-  background: radial-gradient(1200px 600px at 20% 0%, rgba(37, 99, 235, .12), transparent 60%),
-              radial-gradient(1000px 600px at 90% 10%, rgba(14, 165, 233, .10), transparent 55%),
+  background: radial-gradient(1200px 600px at 20% 0%, var(--app-primary-soft), transparent 60%),
+              radial-gradient(1000px 600px at 90% 10%, var(--app-accent-soft), transparent 55%),
               var(--app-bg);
   color: var(--app-text);
 }
@@ -30,6 +34,28 @@ a { text-decoration: none; }
   background: linear-gradient(90deg, var(--app-primary), var(--app-primary-2));
   border-bottom: 1px solid rgba(255,255,255,.12);
 }
+
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.92);
+  padding: 5px;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, .16);
+}
+
+.app-brand-text {
+  line-height: 1.1;
+}
+
+.app-brand-text .app-brand-title { font-weight: 900; letter-spacing: -.02em; }
+.app-brand-text .app-brand-sub { font-size: .78rem; opacity: .85; }
 
 .app-shell {
   display: grid;
@@ -50,6 +76,40 @@ a { text-decoration: none; }
   background: rgba(255,255,255,.72);
   backdrop-filter: blur(10px);
 }
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(20, 40, 130, .16);
+  background:
+    linear-gradient(135deg, rgba(20, 40, 130, .10), rgba(0, 168, 240, .08));
+  box-shadow: 0 10px 26px rgba(2, 6, 23, .06);
+  color: rgba(15,23,42,.92);
+}
+
+.app-sidebar-brand:hover {
+  border-color: rgba(20, 40, 130, .22);
+  background:
+    linear-gradient(135deg, rgba(20, 40, 130, .14), rgba(0, 168, 240, .10));
+}
+
+.app-sidebar-brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: rgba(255,255,255,.92);
+  padding: 6px;
+  box-shadow: 0 10px 22px rgba(2, 6, 23, .10);
+}
+
+.app-sidebar-brand-text { line-height: 1.1; }
+.app-sidebar-brand-title { font-weight: 900; letter-spacing: -.02em; }
+.app-sidebar-brand-sub { font-size: .78rem; color: var(--app-muted); margin-top: 2px; }
 
 @media (max-width: 991.98px) {
   .app-sidebar { display: none; }
@@ -74,12 +134,12 @@ a { text-decoration: none; }
 .app-nav a i { color: var(--app-primary); width: 20px; text-align: center; }
 
 .app-nav a:hover {
-  background: rgba(37,99,235,.10);
+  background: var(--app-primary-soft);
 }
 
 .app-nav a.is-active {
-  background: linear-gradient(90deg, rgba(37,99,235,.18), rgba(29,78,216,.10));
-  border: 1px solid rgba(37,99,235,.18);
+  background: linear-gradient(90deg, rgba(20, 40, 130, .18), rgba(0, 168, 240, .10));
+  border: 1px solid rgba(20, 40, 130, .20);
 }
 
 .app-main {
@@ -122,6 +182,11 @@ a { text-decoration: none; }
   border: 0;
 }
 
+.app-btn-primary.btn:hover,
+.app-btn-primary.btn:focus {
+  background: linear-gradient(90deg, var(--app-primary-3), var(--app-primary-2));
+}
+
 .app-btn-danger.btn {
   background: linear-gradient(90deg, var(--app-danger), #b91c1c);
   border: 0;
@@ -147,7 +212,29 @@ a { text-decoration: none; }
 }
 
 .app-table tbody tr:hover {
-  background: rgba(37,99,235,.04);
+  background: rgba(20, 40, 130, .04);
+}
+
+/* Auth (login) */
+.app-auth-card {
+  max-width: 420px;
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid var(--app-border);
+  background:
+    radial-gradient(620px 260px at 0% 0%, rgba(0, 168, 240, .10), transparent 55%),
+    radial-gradient(620px 260px at 100% 0%, rgba(20, 40, 130, .10), transparent 55%),
+    #fff;
+}
+
+.app-auth-logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  border-radius: 20px;
+  background: rgba(255,255,255,.88);
+  padding: 10px;
+  box-shadow: 0 12px 26px rgba(2, 6, 23, .10);
 }
 
 /* HTMX */

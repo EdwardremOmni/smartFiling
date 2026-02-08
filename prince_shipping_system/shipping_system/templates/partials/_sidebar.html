@@ -3,6 +3,18 @@
   class="app-sidebar"
   {% if sidebar_oob %}hx-swap-oob="outerHTML"{% endif %}
 >
+  <a class="app-sidebar-brand" href="{% url 'home' %}">
+    <img
+      src="{{ MEDIA_URL }}logo/Prince_Shipping_Logo_-_1-removebg-preview.png"
+      class="app-sidebar-brand-logo"
+      alt="Prince Shipping"
+    />
+    <div class="app-sidebar-brand-text">
+      <div class="app-sidebar-brand-title">Prince Shipping</div>
+      <div class="app-sidebar-brand-sub">Smart Filing</div>
+    </div>
+  </a>
+
   <nav class="app-nav">
     {% if request.user.is_authenticated %}
       <a href="{% url 'home' %}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
