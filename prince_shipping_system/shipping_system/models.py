@@ -50,3 +50,15 @@ class InternalDocument(models.Model):
     def save(self, *args, **kwargs):
         self.updated_on = now()
         super().save(*args, **kwargs)
+
+
+class Agreement(models.Model):
+    importer = models.ForeignKey(Importer, on_delete=models.CASCADE)
+    company_name = models.CharField(max_length=100)
+    attached_documents = models.FileField(upload_to='agreements/')
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(default=now)
+
+    def save(self, *args, **kwargs):
+        self.updated_on = now()
+        super().save(*args, **kwargs)

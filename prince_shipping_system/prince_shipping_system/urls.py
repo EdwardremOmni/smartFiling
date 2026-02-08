@@ -46,6 +46,13 @@ urlpatterns = [
     path('internal_documents/<int:document_id>/preview/', views.preview_internal_document, name='preview_internal_document'),
     path('internal_documents/<int:document_id>/download/', views.download_internal_document, name='download_internal_document'),
     path('internal_documents/<int:internal_document_id>/delete/', views.delete_internal_document, name='delete_internal_document'),
+
+    path('agreements/', views.agreement_list, name='agreement_list'),
+    path('agreements/add/', views.add_agreement, name='add_agreement'),
+    path('agreements/<int:agreement_id>/edit/', views.edit_agreement, name='edit_agreement'),
+    path('agreements/<int:document_id>/preview/', views.preview_agreement, name='preview_agreement'),
+    path('agreements/<int:document_id>/download/', views.download_agreement, name='download_agreement'),
+    path('agreements/<int:agreement_id>/delete/', views.delete_agreement, name='delete_agreement'),
     path('my-account/', views.my_account, name='my_account'),
     path('my-account/edit/', views.edit_user_details, name='edit_user_details'),
     path('logout/', views.user_logout, name='logout'),

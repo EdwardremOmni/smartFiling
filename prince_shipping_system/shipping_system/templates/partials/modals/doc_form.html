@@ -1,0 +1,60 @@
+<div class="p-4">
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+      <h2 class="h4 fw-bold mb-1">{% if internal_document %}Edit Document{% else %}Add Document{% endif %}</h2>
+      <div class="text-muted small">Upload internal documents for quick access.</div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+  </div>
+
+  {% if errors %}
+    <div class="alert alert-danger py-2">
+      <ul class="mb-0">
+        {% for msg in errors %}<li>{{ msg }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post"
+        enctype="multipart/form-data"
+        hx-encoding="multipart/form-data"
+        hx-post="{% if internal_document %}{% url 'edit_internal_document' internal_document.id %}{% else %}{% url 'add_internal_document' %}{% endif %}"
+        hx-target="#modal-body"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="company_name">Company Name</label>
+      <div class="input-group app-input-group">
+        <span class="input-group-text bg-light"><i class="fas fa-building"></i></span>
+        <input type="text" id="company_name" class="form-control" name="company_name" value="{{ values.company_name|default:'' }}" required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="document_name">Document Name</label>
+      <div class="input-group app-input-group">
+        <span class="input-group-text bg-light"><i class="fas fa-file-alt"></i></span>
+        <input type="text" id="document_name" class="form-control" name="document_name" value="{{ values.document_name|default:'' }}" required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="description">Description</label>
+      <textarea class="form-control" id="description" rows="4" name="description" required>{{ values.description|default:'' }}</textarea>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label fw-semibold" for="documents">Attach Document {% if internal_document %}(optional){% endif %}</label>
+      <input type="file" name="documents" id="documents" class="form-control" accept=".pdf, .png, .jpg, .jpeg">
+      <small class="text-muted">Accepted: PDF, PNG, JPG.</small>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+      <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary app-btn-primary rounded-pill px-4">
+        <i class="fas fa-save me-2"></i>Save
+      </button>
+    </div>
+  </form>
+</div>

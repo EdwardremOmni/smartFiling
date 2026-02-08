@@ -1,0 +1,20 @@
+<div
+  id="topbar-right"
+  class="d-flex align-items-center gap-3"
+  {% if topbar_oob %}hx-swap-oob="outerHTML"{% endif %}
+>
+  <span id="global-indicator" class="text-white-50 small align-items-center">
+    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+    Loading
+  </span>
+  {% if request.user.is_authenticated %}
+    {% if request.user.is_staff or request.user.is_superuser %}
+      <span class="badge text-bg-warning">Manager</span>
+    {% else %}
+      <span class="badge text-bg-secondary">User</span>
+    {% endif %}
+    <a class="btn btn-sm btn-outline-light" href="{% url 'my_account' %}">
+      <i class="fas fa-user-circle me-1"></i>Account
+    </a>
+  {% endif %}
+</div>

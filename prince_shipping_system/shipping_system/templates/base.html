@@ -8,249 +8,49 @@
   {% load bootstrap5 %}
   {% bootstrap_css %}
   {% bootstrap_javascript %}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
-  <style>
-    body {
-      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
-      font-family: 'Roboto', Arial, sans-serif;
-      min-height: 100vh;
-      color: #222;
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      padding: 70px 0 0;
-      background: #fff;
-      border-right: 1px solid #e5e7eb;
-      width: 250px;
-      z-index: 1000;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-      transition: width 0.2s;
-    }
-    .sidebar .list-group-item {
-      border: none;
-      background: none;
-      color: #333;
-      font-weight: 500;
-      font-size: 1.05rem;
-      margin-bottom: 6px;
-      border-radius: 8px;
-      transition: background 0.2s, color 0.2s;
-      display: flex;
-      align-items: center;
-    }
-    .sidebar .list-group-item i {
-      color: #0d6efd;
-      font-size: 1.2rem;
-      margin-right: 12px;
-    }
-    .sidebar .list-group-item.active, .sidebar .list-group-item:hover {
-      background: linear-gradient(90deg, #0d6efd 0%, #2563eb 100%);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(13,110,253,0.08);
-    }
-    .sidebar .list-group-item.active i, .sidebar .list-group-item:hover i {
-      color: #fff;
-    }
-    @media (max-width: 991.98px) {
-      .sidebar {
-        width: 100%;
-        position: relative;
-        padding-top: 0;
-        box-shadow: none;
-        border-right: none;
-      }
-    }
-    main {
-      margin-left: 250px;
-      padding: 40px 0 0 0;
-      min-height: 100vh;
-      transition: margin-left 0.2s;
-    }
-    @media (max-width: 991.98px) {
-      main {
-        margin-left: 0;
-        padding-top: 20px;
-      }
-    }
-    .navbar {
-      background: linear-gradient(90deg, #0d6efd 0%, #2563eb 100%);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(13,110,253,0.08);
-      height: 58px;
-      position: fixed;
-      width: 100%;
-      z-index: 1100;
-      top: 0;
-      left: 0;
-      display: flex;
-      align-items: center;
-      padding: 0 30px;
-    }
-    .navbar-brand {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: #fff !important;
-      letter-spacing: 1px;
-    }
-    .content {
-      padding-top: 20px;
-    }
-    .container {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-      padding: 32px 28px 28px 28px;
-      margin-bottom: 32px;
-      margin-top: 0;
-    }
-    h1 {
-      font-weight: 700;
-      font-size: 2.1rem;
-      color: #0d6efd;
-      margin-bottom: 18px;
-    }
-    hr {
-      border-top: 2px solid #e5e7eb;
-      margin-bottom: 28px;
-    }
-    footer {
-      background: #f1f5f9;
-      color: #6c757d;
-      border-top: 1px solid #e5e7eb;
-      margin-top: 40px;
-      padding-top: 32px;
-    }
-    footer h6 {
-      color: #0d6efd;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-    footer a.text-reset:hover {
-      color: #0d6efd !important;
-      text-decoration: underline;
-    }
-    .footer-copyright {
-      background: rgba(0, 0, 0, 0.04);
-      color: #222;
-      font-size: 0.98rem;
-      padding: 16px 0;
-      margin-top: 24px;
-      border-radius: 0 0 16px 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'assets/styles/app.css' %}">
 </head>
-<body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark">
-    <a class="navbar-brand" href="{% url 'home' %}">
-      <i class="fas fa-ship"></i> Prince Shipping
-    </a>
-  </nav>
-  <!-- Sidebar -->
-  <nav id="sidebarMenu" class="sidebar d-lg-block">
-    <div class="position-sticky">
-      <div class="list-group list-group-flush mx-3 mt-4">
-        <a href="{% url 'home' %}" class="list-group-item list-group-item-action py-2 ripple active" aria-current="true">
-          <i class="fas fa-tachometer-alt"></i> Smart Filing
-        </a>
-        <a href="{% url 'importer_list' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-users"></i> Importers
-        </a>
-        <a href="{% url 'add_importer' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-user-plus"></i> Add Importer
-        </a>
-        <a href="{% url 'bill_of_entry_list' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-file-invoice"></i> Bill of Entries
-        </a>
-        <a href="{% url 'add_bill_of_entry' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-plus-square"></i> Add Bill Of Entry
-        </a>
-        <a href="{% url 'internal_document_list' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-folder-open"></i> Documents
-        </a>
-        <a href="{% url 'add_internal_document' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-file-upload"></i> Add Document
-        </a>
-        
-        <a href="{% url 'my_account' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-user-circle"></i> My Account
-        </a>
-        <a href="{% url 'logout' %}" class="list-group-item list-group-item-action py-2 ripple">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
-      </div>
-    </div>
-  </nav>
-  <!-- Sidebar End -->
+<body
+  style="font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Arial, sans-serif;"
+  hx-boost="true"
+  hx-target="#main-content"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+>
+  <nav class="navbar navbar-dark app-topbar sticky-top" style="height:58px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+        <i class="fas fa-ship me-2"></i>Prince Shipping
+      </a>
 
-  <main>
-    <div class="content">
-      <div class="container">
-        <h1>{{ title }}</h1>
-        <hr>
-        {% block content %}{% endblock %}
-      </div>
+      {% include 'partials/_topbar_right.html' with topbar_oob=False %}
     </div>
-    <!-- Footer -->
-    <footer class="text-center text-lg-start">
-      <section class="d-flex justify-content-center justify-content-lg-between p-4 border-bottom">
-        <!-- Social media icons could go here -->
-      </section>
-      <section>
-        <div class="container text-center text-md-start mt-5">
-          <div class="row mt-3">
-            <div class="col-md-3 col-lg-4 col-xl-3 mx-auto mb-4">
-              <h6 class="text-uppercase fw-bold mb-4">
-                <i class="fas fa-gem me-3"></i>PRINCE SHIPPING
-              </h6>
-              <p>
-                Prince Shipping was founded in 1997 with the goal of providing Zimbabwean businesses with efficient and reliable shipping solutions. The company has grown steadily over the years and now has a team of over 100 experienced and qualified staff. Prince Shipping offers a wide range of services, including customs clearance, transport and logistics, consolidating and warehousing, rebates, import licenses and permits application, and tax clearance and company registration.
-              </p>
-            </div>
-            <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
-              <h6 class="text-uppercase fw-bold mb-4">OUR SERVICES</h6>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Customs Clearing</a></p>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Transport & Logistics</a></p>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Consolidating & Warehousing</a></p>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Rebates</a></p>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Import Licenses & Permit Applications</a></p>
-              <p><a href="https://princeshipping.co.zw/services/" class="text-reset">Tax Clearance & Company Registration</a></p>
-            </div>
-            <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mb-4">
-              <h6 class="text-uppercase fw-bold mb-4">Useful links</h6>
-              <p><a href="https://princeshipping.co.zw/" class="text-reset">Our Website</a></p>
-              <p><a href="https://princeshipping.co.zw/news/" class="text-reset">Blog</a></p>
-              <p><a href="https://princeshipping.co.zw/faq/" class="text-reset">Frequent Asked Questions</a></p>
-              <p><a href="https://princeshipping.co.zw/about-us/" class="text-reset">About Us</a></p>
-              <p><a href="https://www.facebook.com/profile.php?id=61554736012533" class="text-reset">Facebook</a></p>
-            </div>
-            <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
-              <h6 class="text-uppercase fw-bold mb-4">Contact</h6>
-              <p><i class="fas fa-home me-3"></i> Office 322, Anably House, N Mandela / Angwa, Harare Zimbabwe</p>
-              <p><i class="fas fa-envelope me-3"></i> operations@princeshipping.co.zw</p>
-              <p><i class="fas fa-phone me-3"></i> 0772443677</p>
-              <p><i class="fas fa-print me-3"></i> 0719999922</p>
-            </div>
-          </div>
+  </nav>
+
+  <div class="app-shell">
+    {% include 'partials/_sidebar.html' with sidebar_oob=False %}
+
+    <main class="app-main">
+      <div class="app-container">
+        <div id="main-content">
+          {% block content %}{% endblock %}
         </div>
-      </section>
-      <div class="footer-copyright text-center">
-        © Copyright: All Rights Reserved, System Developed by 
-        <a class="text-reset fw-bold" href="https://www.linkedin.com/in/rufaro-mutepfa-0a64b810a/">Edwardrem</a>
       </div>
-    </footer>
-    <!-- Footer End -->
-  </main>
+    </main>
+  </div>
 
-  <!-- Scripts -->
-  <script src="{% static 'assets/scripts/jquery.js' %}"></script>
-  <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
-  <script src="{% static 'assets/scripts/datatables.js' %}"></script>
-  <script src="{% static 'assets/scripts/datatables_bootstrap.js' %}"></script>
+  <div class="modal fade" id="appModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content" style="border-radius: var(--app-radius); overflow: hidden;">
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'assets/scripts/app.js' %}" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

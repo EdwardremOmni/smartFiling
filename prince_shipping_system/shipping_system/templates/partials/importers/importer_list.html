@@ -1,0 +1,45 @@
+<div class="app-pagehead">
+  <div>
+    <h1 class="app-title"><i class="fas fa-users me-2 text-primary"></i>Importers</h1>
+    <p class="app-subtitle">Create, edit and manage importers.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a
+      href="{% url 'add_importer' %}"
+      class="btn btn-primary app-btn-primary rounded-pill px-4"
+      hx-boost="false"
+      hx-get="{% url 'add_importer' %}"
+      hx-target="#modal-body"
+      hx-push-url="false"
+    >
+      <i class="fas fa-user-plus me-2"></i>Add Importer
+    </a>
+  </div>
+</div>
+
+<div class="card app-card">
+  <div class="card-body">
+    <div class="row g-2 align-items-center mb-3">
+      <div class="col-md-6">
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-magnifying-glass"></i></span>
+          <input
+            class="form-control"
+            type="search"
+            name="q"
+            value="{{ query|default:'' }}"
+            placeholder="Search importers..."
+            hx-get="{% url 'importer_list' %}"
+            hx-trigger="keyup changed delay:300ms"
+            hx-target="#importer-table"
+            hx-push-url="true"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div id="importer-table">
+      {% include 'partials/importers/_table.html' %}
+    </div>
+  </div>
+</div>

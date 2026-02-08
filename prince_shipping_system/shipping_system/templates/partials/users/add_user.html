@@ -1,0 +1,60 @@
+<div class="app-pagehead">
+  <div>
+    <h1 class="app-title"><i class="fas fa-user-plus me-2 text-primary"></i>Add User</h1>
+    <p class="app-subtitle">Create a new user record.</p>
+  </div>
+  <div>
+    <a href="{% url 'user_list' %}" class="btn btn-outline-primary rounded-pill px-4">
+      <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="card app-card mx-auto" style="max-width: 560px;">
+  <div class="card-body">
+    {% if errors %}
+      <div class="alert alert-danger py-2">
+        <ul class="mb-0">
+          {% for msg in errors %}<li>{{ msg }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="name" class="form-label fw-semibold">Name</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-user"></i></span>
+          <input type="text" id="name" class="form-control" name="name" value="{{ values.name|default:'' }}" placeholder="Enter name" required autofocus>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label fw-semibold">Email</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-envelope"></i></span>
+          <input type="email" id="email" class="form-control" name="email" value="{{ values.email|default:'' }}" placeholder="Enter email" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label fw-semibold">Password</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-lock"></i></span>
+          <input type="password" id="password" class="form-control" name="password" placeholder="Enter password" required>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label for="role" class="form-label fw-semibold">Role</label>
+        <select name="role" id="role" class="form-select app-input" required>
+          <option value="" disabled {% if not values.role %}selected{% endif %}>Select role</option>
+          <option value="Manager" {% if values.role == 'Manager' %}selected{% endif %}>Manager</option>
+          <option value="User" {% if values.role == 'User' %}selected{% endif %}>User</option>
+        </select>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary app-btn-primary btn-lg rounded-pill fw-semibold shadow-sm">
+          <i class="fas fa-user-plus me-2"></i>Create
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

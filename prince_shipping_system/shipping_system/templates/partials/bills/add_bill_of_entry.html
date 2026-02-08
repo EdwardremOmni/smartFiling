@@ -1,0 +1,64 @@
+<div class="app-pagehead">
+  <div>
+    <h1 class="app-title"><i class="fas fa-file-invoice me-2 text-primary"></i>Add Bill of Entry</h1>
+    <p class="app-subtitle">Create a new bill of entry and attach a document.</p>
+  </div>
+  <div>
+    <a href="{% url 'bill_of_entry_list' %}" class="btn btn-outline-primary rounded-pill px-4">
+      <i class="fas fa-arrow-left me-2"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="card app-card mx-auto" style="max-width: 720px;">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" autocomplete="off" hx-boost="false">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="importer" class="form-label fw-semibold">Importer</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-users"></i></span>
+          <select name="importer" id="importer" class="form-select" required>
+            <option value="" disabled selected>Select importer</option>
+            {% for importer in importers %}
+              <option value="{{ importer.id }}">{{ importer.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="entry_number" class="form-label fw-semibold">Entry Number</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-hashtag"></i></span>
+          <input type="text" id="entry_number" class="form-control" name="entry_number" placeholder="e.g. 12345" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="invoice_reference" class="form-label fw-semibold">Invoice/Reference</label>
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-file-invoice"></i></span>
+          <input type="text" id="invoice_reference" class="form-control" name="invoice_reference" placeholder="e.g. INV-001" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label fw-semibold">Description</label>
+        <textarea class="form-control" id="description" rows="4" name="description" placeholder="Enter description" required></textarea>
+      </div>
+
+      <div class="mb-4">
+        <label for="documents" class="form-label fw-semibold">Attach Document</label>
+        <input type="file" name="documents" id="documents" class="form-control" accept=".pdf, .png, .jpg, .jpeg">
+        <small class="text-muted">Accepted: PDF, PNG, JPG.</small>
+      </div>
+
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary app-btn-primary btn-lg rounded-pill fw-semibold shadow-sm">
+          <i class="fas fa-save me-2"></i>Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

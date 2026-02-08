@@ -1,0 +1,45 @@
+<div class="app-pagehead">
+  <div>
+    <h1 class="app-title"><i class="fas fa-file-contract me-2 text-primary"></i>Agreements</h1>
+    <p class="app-subtitle">Upload and manage importer agreements.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a
+      href="{% url 'add_agreement' %}"
+      class="btn btn-primary app-btn-primary rounded-pill px-4"
+      hx-boost="false"
+      hx-get="{% url 'add_agreement' %}"
+      hx-target="#modal-body"
+      hx-push-url="false"
+    >
+      <i class="fas fa-plus me-2"></i>Add Agreement
+    </a>
+  </div>
+</div>
+
+<div class="card app-card">
+  <div class="card-body">
+    <div class="row g-2 align-items-center mb-3">
+      <div class="col-md-6">
+        <div class="input-group app-input-group">
+          <span class="input-group-text bg-light"><i class="fas fa-magnifying-glass"></i></span>
+          <input
+            class="form-control"
+            type="search"
+            name="q"
+            value="{{ query|default:'' }}"
+            placeholder="Search by importer or company name..."
+            hx-get="{% url 'agreement_list' %}"
+            hx-trigger="keyup changed delay:300ms"
+            hx-target="#agreement-table"
+            hx-push-url="true"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div id="agreement-table">
+      {% include 'partials/agreements/_table.html' %}
+    </div>
+  </div>
+</div>
