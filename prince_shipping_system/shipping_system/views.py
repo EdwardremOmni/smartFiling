@@ -162,7 +162,7 @@ def add_user(request):
 
         username = (email or '').lower()
         if username and AuthUser.objects.filter(username=username).exists():
-            errors.append('Email already exists.')
+            errors.append('Email already exists. Please enter another email.')
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
@@ -170,7 +170,6 @@ def add_user(request):
                     request,
                     'partials/modals/user_form.html',
                     {'user_obj': None, 'errors': errors, 'values': {'name': name, 'email': email, 'role': role}},
-                    status=422,
                 )
             return render(request, 'users/add_user.html', {'errors': errors, 'values': {'name': name, 'email': email, 'role': role}})
 
@@ -221,7 +220,7 @@ def edit_user(request, user_id):
 
         username = (email or '').lower()
         if username and AuthUser.objects.filter(username=username).exclude(pk=user_obj.pk).exists():
-            errors.append('Email already exists.')
+            errors.append('Email already exists. Please enter another email.')
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
@@ -229,7 +228,6 @@ def edit_user(request, user_id):
                     request,
                     'partials/modals/user_form.html',
                     {'user_obj': user_obj, 'errors': errors, 'values': {'name': name, 'email': email, 'role': role}},
-                    status=422,
                 )
             return render(request, 'users/edit_user.html', {'user_obj': user_obj, 'errors': errors, 'values': {'name': name, 'email': email, 'role': role}})
 
@@ -316,7 +314,6 @@ def add_importer(request):
                     request,
                     'partials/modals/importer_form.html',
                     {'importer': None, 'errors': errors, 'values': {'name': name}},
-                    status=422,
                 )
             return render(request, 'importers/add_importer.html', {'errors': errors})
 
@@ -346,7 +343,6 @@ def edit_importer(request, importer_id):
                     request,
                     'partials/modals/importer_form.html',
                     {'importer': importer, 'errors': errors, 'values': {'name': name}},
-                    status=422,
                 )
             return render(request, 'importers/edit_importer.html', {'importer': importer, 'errors': errors})
 
@@ -433,13 +429,17 @@ def add_bill_of_entry(request):
             'description': description,
         }
 
+        focus_entry_number = False
+        if entry_number and BillOfEntry.objects.filter(entry_number=entry_number).exists():
+            errors.append('Entry number already exists. Please enter another entry number.')
+            focus_entry_number = True
+
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
                 return render(
                     request,
                     'partials/modals/bill_form.html',
-                    {'bill_of_entry': None, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
+                    {'bill_of_entry': None, 'importers': importers, 'errors': errors, 'values': values, 'focus_entry_number': focus_entry_number},
                 )
             return render(request, 'bills/add_bill_of_entry.html', {'importers': importers, 'errors': errors})
 
@@ -455,15 +455,14 @@ def add_bill_of_entry(request):
         except Importer.DoesNotExist:
             errors = ['Selected importer does not exist.']
         except IntegrityError:
-            errors = ['Entry number already exists.']
+            errors = ['Entry number already exists. Please enter another entry number.']
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
                 return render(
                     request,
                     'partials/modals/bill_form.html',
-                    {'bill_of_entry': None, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
+                    {'bill_of_entry': None, 'importers': importers, 'errors': errors, 'values': values, 'focus_entry_number': focus_entry_number},
                 )
             return render(request, 'bills/add_bill_of_entry.html', {'importers': importers, 'errors': errors})
 
@@ -516,13 +515,17 @@ def edit_bill_of_entry(request, bill_of_entry_id):
             'description': description,
         }
 
+        focus_entry_number = False
+        if entry_number and BillOfEntry.objects.filter(entry_number=entry_number).exclude(pk=bill_of_entry.pk).exists():
+            errors.append('Entry number already exists. Please enter another entry number.')
+            focus_entry_number = True
+
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
                 return render(
                     request,
                     'partials/modals/bill_form.html',
-                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
+                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values, 'focus_entry_number': focus_entry_number},
                 )
             return render(request, 'bills/edit_bill_of_entry.html', {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors})
 
@@ -534,8 +537,7 @@ def edit_bill_of_entry(request, bill_of_entry_id):
                 return render(
                     request,
                     'partials/modals/bill_form.html',
-                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
+                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values, 'focus_entry_number': focus_entry_number},
                 )
             return render(request, 'bills/edit_bill_of_entry.html', {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors})
 
@@ -548,13 +550,12 @@ def edit_bill_of_entry(request, bill_of_entry_id):
         try:
             bill_of_entry.save()
         except IntegrityError:
-            errors = ['Entry number already exists.']
+            errors = ['Entry number already exists. Please enter another entry number.']
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
                 return render(
                     request,
                     'partials/modals/bill_form.html',
-                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
+                    {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors, 'values': values, 'focus_entry_number': True},
                 )
             return render(request, 'bills/edit_bill_of_entry.html', {'bill_of_entry': bill_of_entry, 'importers': importers, 'errors': errors})
 
@@ -675,7 +676,6 @@ def add_internal_document(request):
                     request,
                     'partials/modals/doc_form.html',
                     {'internal_document': None, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'docs/add_internal_document.html', {'errors': errors})
 
@@ -725,7 +725,6 @@ def edit_internal_document(request, internal_document_id):
                     request,
                     'partials/modals/doc_form.html',
                     {'internal_document': internal_document, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'docs/edit_internal_document.html', {'internal_document': internal_document, 'errors': errors})
 
@@ -843,7 +842,6 @@ def add_agreement(request):
                     request,
                     'partials/modals/agreement_form.html',
                     {'agreement': None, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'agreements/add_agreement.html', {'importers': importers, 'errors': errors})
 
@@ -856,7 +854,6 @@ def add_agreement(request):
                     request,
                     'partials/modals/agreement_form.html',
                     {'agreement': None, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'agreements/add_agreement.html', {'importers': importers, 'errors': errors})
 
@@ -905,7 +902,6 @@ def edit_agreement(request, agreement_id):
                     request,
                     'partials/modals/agreement_form.html',
                     {'agreement': agreement, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'agreements/edit_agreement.html', {'agreement': agreement, 'importers': importers, 'errors': errors})
 
@@ -918,7 +914,6 @@ def edit_agreement(request, agreement_id):
                     request,
                     'partials/modals/agreement_form.html',
                     {'agreement': agreement, 'importers': importers, 'errors': errors, 'values': values},
-                    status=422,
                 )
             return render(request, 'agreements/edit_agreement.html', {'agreement': agreement, 'importers': importers, 'errors': errors})
 

@@ -40,7 +40,7 @@
       <label class="form-label fw-semibold" for="entry_number">Entry Number</label>
       <div class="input-group app-input-group">
         <span class="input-group-text bg-light"><i class="fas fa-hashtag"></i></span>
-        <input type="text" id="entry_number" class="form-control" name="entry_number" value="{{ values.entry_number|default:'' }}" required>
+        <input type="text" id="entry_number" class="form-control" name="entry_number" value="{{ values.entry_number|default:'' }}" required {% if focus_entry_number %}autofocus{% endif %}>
       </div>
     </div>
 

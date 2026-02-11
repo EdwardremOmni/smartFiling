@@ -76,6 +76,20 @@
     if (evt.detail.target.id === 'modal-body') {
       var modal = getModal();
       if (modal) modal.show();
+
+      // If the swapped-in modal content marks a field with autofocus,
+      // focus it after Bootstrap finishes rendering.
+      window.setTimeout(function () {
+        try {
+          var body = document.getElementById('modal-body');
+          if (!body) return;
+          var el = body.querySelector('[autofocus]');
+          if (el && typeof el.focus === 'function') el.focus();
+          if (el && typeof el.select === 'function') el.select();
+        } catch (e) {
+          // ignore
+        }
+      }, 50);
     }
   });
 

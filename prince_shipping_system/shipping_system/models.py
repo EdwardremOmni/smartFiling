@@ -13,7 +13,12 @@ class User(models.Model):
         super().save(*args, **kwargs)
     
     name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(
+        unique=True,
+        error_messages={
+            'unique': 'Email already exists. Please enter another email.',
+        },
+    )
     password = models.CharField(max_length=100)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
@@ -28,7 +33,13 @@ class Importer(models.Model):
 
 class BillOfEntry(models.Model):
     importer = models.ForeignKey(Importer, on_delete=models.CASCADE)
-    entry_number = models.CharField(max_length=50, unique=True)
+    entry_number = models.CharField(
+        max_length=50,
+        unique=True,
+        error_messages={
+            'unique': 'Entry number already exists. Please enter another entry number.',
+        },
+    )
     invoice_reference = models.CharField(max_length=50, blank=True)
     description = models.TextField()
     attached_documents = models.FileField(upload_to='bills_of_entry/')
