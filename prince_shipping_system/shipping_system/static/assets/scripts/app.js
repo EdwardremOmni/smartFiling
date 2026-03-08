@@ -52,6 +52,13 @@
     htmx.ajax('GET', url, { target: '#' + targetId, swap: 'innerHTML' });
   }
 
+  function refreshTargetFromCurrentUrl(targetId) {
+    var el = document.getElementById(targetId);
+    if (!el || !window.htmx) return;
+    var url = (window.location.pathname || '/') + (window.location.search || '');
+    htmx.ajax('GET', url, { target: '#' + targetId, swap: 'innerHTML' });
+  }
+
   function setActiveNav() {
     var path = window.location.pathname || '';
     document.querySelectorAll('.app-nav a').forEach(function (a) {
@@ -120,6 +127,10 @@
 
   document.body.addEventListener('agreementsChanged', function () {
     refreshTableIfPresent('agreement-table', '/agreements/');
+  });
+
+  document.body.addEventListener('shipmentsChanged', function () {
+    refreshTargetFromCurrentUrl('shipment-cards');
   });
 
   document.addEventListener('htmx:afterSwap', function (evt) {

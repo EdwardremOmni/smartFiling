@@ -16,26 +16,38 @@
   </a>
 
   <nav class="app-nav">
+    {% with current=request.resolver_match.url_name %}
     {% if request.user.is_authenticated %}
-      <a href="{% url 'home' %}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+      <a href="{% url 'home' %}" class="{% if current == 'home' %}is-active{% endif %}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
 
       {% if request.user.is_staff or request.user.is_superuser %}
-        <a href="{% url 'importer_list' %}"><i class="fas fa-users"></i><span>Importers</span></a>
+        <a href="{% url 'importer_list' %}" class="{% if current == 'importer_list' %}is-active{% endif %}"><i class="fas fa-users"></i><span>Importers</span></a>
       {% endif %}
 
-      <a href="{% url 'bill_of_entry_list' %}"><i class="fas fa-file-invoice"></i><span>Bills of Entry</span></a>
-      <a href="{% url 'agreement_list' %}"><i class="fas fa-file-contract"></i><span>Agreements</span></a>
-      <a href="{% url 'internal_document_list' %}"><i class="fas fa-folder-open"></i><span>Documents</span></a>
+      <a href="{% url 'bill_of_entry_list' %}" class="{% if current == 'bill_of_entry_list' %}is-active{% endif %}"><i class="fas fa-file-invoice"></i><span>Bills of Entry</span></a>
+      <a href="{% url 'agreement_list' %}" class="{% if current == 'agreement_list' %}is-active{% endif %}"><i class="fas fa-file-contract"></i><span>Agreements</span></a>
+      <a href="{% url 'internal_document_list' %}" class="{% if current == 'internal_document_list' %}is-active{% endif %}"><i class="fas fa-folder-open"></i><span>Documents</span></a>
+
+      <hr class="my-2" />
+      <div class="app-nav-section">Shipments</div>
+      <a href="{% url 'shipment_not_registered_list' %}" class="{% if current == 'shipment_not_registered_list' %}is-active{% endif %}"><i class="fas fa-truck"></i><span>Not Yet Registered</span></a>
+      <a href="{% url 'shipment_registered_list' %}" class="{% if current == 'shipment_registered_list' %}is-active{% endif %}"><i class="fas fa-clipboard-check"></i><span>Registered</span></a>
+      <a href="{% url 'shipment_assessed_list' %}" class="{% if current == 'shipment_assessed_list' %}is-active{% endif %}"><i class="fas fa-scale-balanced"></i><span>Assessed</span></a>
+      <a href="{% url 'shipment_paid_list' %}" class="{% if current == 'shipment_paid_list' %}is-active{% endif %}"><i class="fas fa-money-bill-wave"></i><span>Paid</span></a>
+      <a href="{% url 'shipment_receipted_list' %}" class="{% if current == 'shipment_receipted_list' %}is-active{% endif %}"><i class="fas fa-receipt"></i><span>Receipted</span></a>
+      <a href="{% url 'shipment_release_list' %}" class="{% if current == 'shipment_release_list' %}is-active{% endif %}"><i class="fas fa-door-open"></i><span>Release</span></a>
+      <a href="{% url 'shipment_completed_list' %}" class="{% if current == 'shipment_completed_list' %}is-active{% endif %}"><i class="fas fa-circle-check"></i><span>Completed</span></a>
 
       {% if request.user.is_staff or request.user.is_superuser %}
-        <a href="{% url 'user_list' %}"><i class="fas fa-user-friends"></i><span>Users</span></a>
+        <a href="{% url 'user_list' %}" class="{% if current == 'user_list' %}is-active{% endif %}"><i class="fas fa-user-friends"></i><span>Users</span></a>
       {% endif %}
 
-      <a href="{% url 'my_account' %}"><i class="fas fa-user-circle"></i><span>My Account</span></a>
+      <a href="{% url 'my_account' %}" class="{% if current == 'my_account' %}is-active{% endif %}"><i class="fas fa-user-circle"></i><span>My Account</span></a>
       <hr class="my-2" />
       <a href="{% url 'logout' %}" hx-boost="false"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
     {% else %}
-      <a href="{% url 'user_login' %}" hx-boost="false"><i class="fas fa-right-to-bracket"></i><span>Login</span></a>
+      <a href="{% url 'user_login' %}" hx-boost="false" class="{% if current == 'user_login' %}is-active{% endif %}"><i class="fas fa-right-to-bracket"></i><span>Login</span></a>
     {% endif %}
+    {% endwith %}
   </nav>
 </aside>

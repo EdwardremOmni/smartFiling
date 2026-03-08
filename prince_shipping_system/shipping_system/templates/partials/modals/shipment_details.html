@@ -1,0 +1,146 @@
+<div class="p-4 app-modal">
+  <div class="d-flex align-items-start justify-content-between app-modal-header">
+    <div>
+      <h2 class="h4 fw-bold mb-1">Shipment Details</h2>
+      <div class="text-muted small">{{ shipment.truck_registration }} · {{ shipment.get_status_display }}</div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="fw-semibold">Truck Registration</div>
+      <div class="text-muted">{{ shipment.truck_registration }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="fw-semibold">Manifest Number</div>
+      <div class="text-muted">{{ shipment.manifest_number }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="fw-semibold">Weight (kg)</div>
+      <div class="text-muted">{{ shipment.weight_kg }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="fw-semibold">Status</div>
+      <div class="text-muted">{{ shipment.get_status_display }}</div>
+    </div>
+
+    <div class="col-12"><hr class="my-1" /></div>
+
+    <div class="col-12">
+      <div class="fw-bold mb-2">Stage Data</div>
+      <div class="row g-2">
+        <div class="col-md-4"><div class="small text-muted">Cill Number</div><div class="fw-semibold">{{ shipment.cill_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Bill of Entry Number</div><div class="fw-semibold">{{ shipment.bill_of_entry_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Date Registered</div><div class="fw-semibold">{% if shipment.date_registered %}{{ shipment.date_registered }}{% else %}—{% endif %}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Assessment Number</div><div class="fw-semibold">{{ shipment.assessment_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Date Assessed</div><div class="fw-semibold">{% if shipment.date_assessed %}{{ shipment.date_assessed }}{% else %}—{% endif %}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Receipt Number</div><div class="fw-semibold">{{ shipment.receipt_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Date Exited</div><div class="fw-semibold">{% if shipment.date_exited %}{{ shipment.date_exited }}{% else %}—{% endif %}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Created At</div><div class="fw-semibold">{{ shipment.created_on }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Updated At</div><div class="fw-semibold">{{ shipment.updated_on }}</div></div>
+      </div>
+    </div>
+
+    <div class="col-12"><hr class="my-1" /></div>
+
+    <div class="col-12">
+      <div class="fw-bold mb-2">Uploaded Documents</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 app-table">
+          <thead class="table-light">
+            <tr>
+              <th>Document</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Manifest</td>
+              <td>{% if shipment.manifest_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.manifest_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'manifest_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'manifest_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Waybill</td>
+              <td>{% if shipment.waybill_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.waybill_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'waybill_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'waybill_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Invoice</td>
+              <td>{% if shipment.invoice_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.invoice_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'invoice_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'invoice_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>COMESA / SADC</td>
+              <td>{% if shipment.comesa_sadc_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.comesa_sadc_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'comesa_sadc_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'comesa_sadc_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Proof of Payment</td>
+              <td>{% if shipment.proof_of_payment_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.proof_of_payment_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'proof_of_payment_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'proof_of_payment_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col-12"><hr class="my-1" /></div>
+
+    <div class="col-12">
+      <div class="fw-bold mb-2">Status History</div>
+      {% if events %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0 app-table">
+            <thead class="table-light">
+              <tr>
+                <th>When</th>
+                <th>From</th>
+                <th>To</th>
+                <th>By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in events %}
+                <tr>
+                  <td>{{ e.changed_at }}</td>
+                  <td>{{ e.get_from_status_display }}</td>
+                  <td>{{ e.get_to_status_display }}</td>
+                  <td>{% if e.changed_by %}{{ e.changed_by.username }}{% else %}—{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-muted">No status transitions yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

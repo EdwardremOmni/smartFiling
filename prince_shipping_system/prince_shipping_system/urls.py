@@ -55,6 +55,27 @@ urlpatterns = [
     path('agreements/<int:document_id>/preview/', views.preview_agreement, name='preview_agreement'),
     path('agreements/<int:document_id>/download/', views.download_agreement, name='download_agreement'),
     path('agreements/<int:agreement_id>/delete/', views.delete_agreement, name='delete_agreement'),
+
+    # Truck / Shipment workflow
+    path('shipments/not-registered/', views.shipment_not_registered_list, name='shipment_not_registered_list'),
+    path('shipments/registered/', views.shipment_registered_list, name='shipment_registered_list'),
+    path('shipments/assessed/', views.shipment_assessed_list, name='shipment_assessed_list'),
+    path('shipments/paid/', views.shipment_paid_list, name='shipment_paid_list'),
+    path('shipments/receipted/', views.shipment_receipted_list, name='shipment_receipted_list'),
+    path('shipments/release/', views.shipment_release_list, name='shipment_release_list'),
+    path('shipments/completed/', views.shipment_completed_list, name='shipment_completed_list'),
+
+    path('shipments/add/', views.add_shipment, name='add_shipment'),
+    path('shipments/<int:shipment_id>/edit/', views.edit_shipment, name='edit_shipment'),
+    path('shipments/<int:shipment_id>/uploads/', views.shipment_uploads, name='shipment_uploads'),
+    path('shipments/<int:shipment_id>/details/', views.shipment_details, name='shipment_details'),
+    path('shipments/<int:shipment_id>/transition/', views.shipment_transition, name='shipment_transition'),
+
+    path('shipments/<int:shipment_id>/files/<str:field>/preview/', views.shipment_file_preview, name='shipment_file_preview'),
+    path('shipments/<int:shipment_id>/files/<str:field>/download/', views.shipment_file_download, name='shipment_file_download'),
+
+    path('shipments/export/excel/', views.shipments_export_excel, name='shipments_export_excel'),
+    path('shipments/completed/export/documents/', views.shipments_export_documents_zip, name='shipments_export_documents_zip'),
     path('my-account/', views.my_account, name='my_account'),
     path('my-account/edit/', views.edit_user_details, name='edit_user_details'),
     path('logout/', views.user_logout, name='logout'),

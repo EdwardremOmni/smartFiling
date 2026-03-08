@@ -75,6 +75,20 @@ a { text-decoration: none; }
   border-right: 1px solid var(--app-border);
   background: rgba(255,255,255,.72);
   backdrop-filter: blur(10px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,.18) transparent;
+}
+
+.app-sidebar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(15,23,42,.14);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 .app-sidebar-brand {
@@ -121,6 +135,16 @@ a { text-decoration: none; }
   gap: 6px;
 }
 
+.app-nav-section {
+  margin-top: 6px;
+  padding: 10px 12px 6px;
+  color: var(--app-muted);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
 .app-nav a {
   display: flex;
   align-items: center;
@@ -129,17 +153,28 @@ a { text-decoration: none; }
   border-radius: 12px;
   color: rgba(15,23,42,.85);
   font-weight: 600;
+  border: 1px solid transparent;
+  transition: background .12s ease-out, border-color .12s ease-out, transform .08s ease-out;
 }
 
 .app-nav a i { color: var(--app-primary); width: 20px; text-align: center; }
 
 .app-nav a:hover {
   background: var(--app-primary-soft);
+  border-color: rgba(20, 40, 130, .14);
 }
 
 .app-nav a.is-active {
   background: linear-gradient(90deg, rgba(20, 40, 130, .18), rgba(0, 168, 240, .10));
   border: 1px solid rgba(20, 40, 130, .20);
+}
+
+.app-nav a:active {
+  transform: translateY(1px);
+}
+
+.app-nav hr {
+  border-top: 1px solid rgba(15,23,42,.10);
 }
 
 .app-main {
@@ -203,6 +238,126 @@ a { text-decoration: none; }
 .app-input-group .form-control,
 .app-input-group .form-select {
   border-radius: 0 999px 999px 0 !important;
+}
+
+/* Filters */
+#shipment-filters .form-label {
+  font-size: .78rem;
+  color: var(--app-muted);
+}
+
+#shipment-filters .form-control,
+#shipment-filters .form-select {
+  border-radius: 14px;
+}
+
+#shipment-filters .form-control:focus,
+#shipment-filters .form-select:focus {
+  border-color: rgba(20, 40, 130, .28);
+  box-shadow: 0 0 0 .2rem rgba(20, 40, 130, .10);
+}
+
+/* Shipment cards */
+.shipment-card-title {
+  font-size: 1.05rem;
+  letter-spacing: -.01em;
+}
+
+.app-badge-soft {
+  background: rgba(255,255,255,.80);
+  border: 1px solid var(--app-border);
+  color: rgba(15,23,42,.74);
+}
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: .45rem .65rem;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+/* Shipment stage badge variants (use existing theme vars only) */
+.badge-status-not_registered {
+  background: linear-gradient(90deg, var(--app-primary-soft), rgba(255,255,255,.80));
+  border-color: rgba(20, 40, 130, .22);
+  color: var(--app-primary);
+}
+
+.badge-status-registered {
+  background: linear-gradient(90deg, var(--app-accent-soft), rgba(255,255,255,.80));
+  border-color: rgba(0, 168, 240, .26);
+  color: var(--app-primary);
+}
+
+.badge-status-assessed {
+  background: linear-gradient(90deg, var(--app-primary-soft), var(--app-accent-soft));
+  border-color: rgba(20, 40, 130, .22);
+  color: var(--app-primary);
+}
+
+.badge-status-paid {
+  background: linear-gradient(90deg, var(--app-accent-soft), var(--app-primary-soft));
+  border-color: rgba(0, 168, 240, .26);
+  color: var(--app-primary);
+}
+
+.badge-status-receipted {
+  background: linear-gradient(90deg, var(--app-primary-soft), rgba(255,255,255,.80));
+  border-color: rgba(20, 40, 130, .22);
+  color: var(--app-primary);
+}
+
+.badge-status-release {
+  background: linear-gradient(90deg, var(--app-accent-soft), rgba(255,255,255,.80));
+  border-color: rgba(0, 168, 240, .26);
+  color: var(--app-primary);
+}
+
+.badge-status-completed {
+  background: linear-gradient(90deg, var(--app-primary-soft), var(--app-accent-soft));
+  border-color: rgba(20, 40, 130, .22);
+  color: var(--app-primary);
+}
+
+/* Pagination */
+.pagination .page-link {
+  border-radius: 999px;
+  border-color: rgba(15,23,42,.12);
+  color: rgba(15,23,42,.78);
+}
+
+.pagination .page-link:hover {
+  background: var(--app-primary-soft);
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(90deg, var(--app-primary), var(--app-primary-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Modals */
+.app-modal {
+  background: radial-gradient(520px 240px at 0% 0%, rgba(0, 168, 240, .08), transparent 60%), #fff;
+}
+
+.app-modal-header {
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+}
+
+.app-modal .form-control,
+.app-modal .form-select {
+  border-radius: 14px;
+}
+
+.app-modal .form-control:focus,
+.app-modal .form-select:focus {
+  border-color: rgba(20, 40, 130, .28);
+  box-shadow: 0 0 0 .2rem rgba(20, 40, 130, .10);
 }
 
 .app-table thead th {

@@ -1,0 +1,94 @@
+<div class="p-4 app-modal">
+  <div class="d-flex align-items-start justify-content-between app-modal-header">
+    <div>
+      <h2 class="h4 fw-bold mb-1">Upload Missing Documents</h2>
+      <div class="text-muted small">Uploaded documents are previewable; missing ones show as Not Uploaded.</div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+  </div>
+
+  <div class="mb-3">
+    <div class="fw-bold">{{ shipment.truck_registration }}</div>
+    <div class="text-muted small">Manifest: {{ shipment.manifest_number }}</div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data"
+        hx-post="{% url 'shipment_uploads' shipment.id %}"
+        hx-target="#modal-body"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Manifest</label>
+        <div class="small mb-1">
+          {% if shipment.manifest_file %}
+            <span class="text-success">Uploaded</span>
+            <span class="ms-2">
+              <a href="{% url 'shipment_file_preview' shipment.id 'manifest_file' %}" target="_blank">Preview</a>
+              · <a href="{% url 'shipment_file_download' shipment.id 'manifest_file' %}">Download</a>
+            </span>
+          {% else %}
+            <span class="text-danger">Not Uploaded</span>
+          {% endif %}
+        </div>
+        <input class="form-control" type="file" name="manifest_file" />
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Waybill</label>
+        <div class="small mb-1">
+          {% if shipment.waybill_file %}
+            <span class="text-success">Uploaded</span>
+            <span class="ms-2">
+              <a href="{% url 'shipment_file_preview' shipment.id 'waybill_file' %}" target="_blank">Preview</a>
+              · <a href="{% url 'shipment_file_download' shipment.id 'waybill_file' %}">Download</a>
+            </span>
+          {% else %}
+            <span class="text-danger">Not Uploaded</span>
+          {% endif %}
+        </div>
+        <input class="form-control" type="file" name="waybill_file" />
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Invoice</label>
+        <div class="small mb-1">
+          {% if shipment.invoice_file %}
+            <span class="text-success">Uploaded</span>
+            <span class="ms-2">
+              <a href="{% url 'shipment_file_preview' shipment.id 'invoice_file' %}" target="_blank">Preview</a>
+              · <a href="{% url 'shipment_file_download' shipment.id 'invoice_file' %}">Download</a>
+            </span>
+          {% else %}
+            <span class="text-danger">Not Uploaded</span>
+          {% endif %}
+        </div>
+        <input class="form-control" type="file" name="invoice_file" />
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">COMESA / SADC Document</label>
+        <div class="small mb-1">
+          {% if shipment.comesa_sadc_file %}
+            <span class="text-success">Uploaded</span>
+            <span class="ms-2">
+              <a href="{% url 'shipment_file_preview' shipment.id 'comesa_sadc_file' %}" target="_blank">Preview</a>
+              · <a href="{% url 'shipment_file_download' shipment.id 'comesa_sadc_file' %}">Download</a>
+            </span>
+          {% else %}
+            <span class="text-danger">Not Uploaded</span>
+          {% endif %}
+        </div>
+        <input class="form-control" type="file" name="comesa_sadc_file" />
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end mt-4">
+      <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary app-btn-primary rounded-pill px-4">
+        <i class="fas fa-upload me-2"></i>Save Uploads
+      </button>
+    </div>
+  </form>
+</div>

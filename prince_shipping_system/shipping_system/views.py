@@ -1,5 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import User as AppUser, Importer, BillOfEntry, InternalDocument, Agreement
+from .models import (
+    User as AppUser,
+    Importer,
+    BillOfEntry,
+    InternalDocument,
+    Agreement,
+    TruckShipment,
+    ShipmentStatusEvent,
+)
 from django.contrib.auth.decorators import login_required
 import mimetypes
 from django.http import HttpResponse, FileResponse
@@ -13,6 +21,14 @@ from django.db import IntegrityError
 import json
 from django.urls import reverse
 from django.core.paginator import Paginator
+
+from datetime import datetime, date
+from decimal import Decimal
+from typing import Optional
+import io
+import zipfile
+
+from openpyxl import Workbook
 
 
 
@@ -996,3 +1012,672 @@ def user_logout(request):
         response['HX-Redirect'] = reverse('user_login')
         return response
     return redirect('user_login')
+
+
+# -----------------------------------------------------------------------------
+# Truck / Shipment workflow
+# -----------------------------------------------------------------------------
+
+SHIPMENT_STATUS_ORDER = [
+    TruckShipment.Status.NOT_REGISTERED,
+    TruckShipment.Status.REGISTERED,
+    TruckShipment.Status.ASSESSED,
+    TruckShipment.Status.PAID,
+    TruckShipment.Status.RECEIPTED,
+    TruckShipment.Status.RELEASE,
+    TruckShipment.Status.COMPLETED,
+]
+
+
+def _parse_date(value: str) -> Optional[date]:
+    value = _clean(value)
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+
+def _parse_decimal(value: str) -> Optional[Decimal]:
+    value = _clean(value)
+    if not value:
+        return None
+    try:
+        return Decimal(value)
+    except Exception:
+        return None
+
+
+def _shipment_next_status(current: str) -> Optional[str]:
+    try:
+        idx = SHIPMENT_STATUS_ORDER.index(current)
+    except ValueError:
+        return None
+    return SHIPMENT_STATUS_ORDER[idx + 1] if idx < len(SHIPMENT_STATUS_ORDER) - 1 else None
+
+
+def _shipment_transition_errors(shipment: TruckShipment, to_status: str) -> list[str]:
+    errors: list[str] = []
+    expected_next = _shipment_next_status(shipment.status)
+    if not expected_next:
+        errors.append('This shipment is already completed.')
+        return errors
+    if to_status != expected_next:
+        errors.append('Invalid status transition.')
+        return errors
+
+    if shipment.status == TruckShipment.Status.NOT_REGISTERED:
+        if not shipment.manifest_file:
+            errors.append('Manifest upload is required to register this shipment.')
+        if not shipment.invoice_file:
+            errors.append('Invoice upload is required to register this shipment.')
+    elif shipment.status == TruckShipment.Status.REGISTERED:
+        if not _clean(shipment.cill_number):
+            errors.append('Cill Number is required.')
+        if not _clean(shipment.bill_of_entry_number):
+            errors.append('Bill of Entry Number is required.')
+        if not shipment.date_registered:
+            errors.append('Date Registered is required.')
+    elif shipment.status == TruckShipment.Status.ASSESSED:
+        if not _clean(shipment.assessment_number):
+            errors.append('Assessment Number is required.')
+        if not shipment.date_assessed:
+            errors.append('Date Assessed is required.')
+    elif shipment.status == TruckShipment.Status.PAID:
+        if not shipment.proof_of_payment_file:
+            errors.append('Proof of Payment upload is required.')
+    elif shipment.status == TruckShipment.Status.RECEIPTED:
+        if not _clean(shipment.receipt_number):
+            errors.append('Receipt Number is required.')
+    elif shipment.status == TruckShipment.Status.RELEASE:
+        if not shipment.date_exited:
+            errors.append('Date Exited is required.')
+
+    return errors
+
+
+def _shipment_apply_filters(request, qs):
+    q = _clean(request.GET.get('q'))
+    truck_registration = _clean(request.GET.get('truck_registration'))
+    manifest_number = _clean(request.GET.get('manifest_number'))
+    cill_number = _clean(request.GET.get('cill_number'))
+    bill_of_entry_number = _clean(request.GET.get('bill_of_entry_number'))
+    assessment_number = _clean(request.GET.get('assessment_number'))
+    receipt_number = _clean(request.GET.get('receipt_number'))
+    weight_min = _parse_decimal(request.GET.get('weight_min'))
+    weight_max = _parse_decimal(request.GET.get('weight_max'))
+    upload_status = _clean(request.GET.get('upload_status'))
+    date_from = _parse_date(request.GET.get('date_from'))
+    date_to = _parse_date(request.GET.get('date_to'))
+
+    if q:
+        qs = qs.filter(
+            Q(truck_registration__icontains=q)
+            | Q(manifest_number__icontains=q)
+            | Q(cill_number__icontains=q)
+            | Q(bill_of_entry_number__icontains=q)
+            | Q(assessment_number__icontains=q)
+            | Q(receipt_number__icontains=q)
+        )
+    if truck_registration:
+        qs = qs.filter(truck_registration__icontains=truck_registration)
+    if manifest_number:
+        qs = qs.filter(manifest_number__icontains=manifest_number)
+    if cill_number:
+        qs = qs.filter(cill_number__icontains=cill_number)
+    if bill_of_entry_number:
+        qs = qs.filter(bill_of_entry_number__icontains=bill_of_entry_number)
+    if assessment_number:
+        qs = qs.filter(assessment_number__icontains=assessment_number)
+    if receipt_number:
+        qs = qs.filter(receipt_number__icontains=receipt_number)
+    if weight_min is not None:
+        qs = qs.filter(weight_kg__gte=weight_min)
+    if weight_max is not None:
+        qs = qs.filter(weight_kg__lte=weight_max)
+
+    if upload_status == 'required_complete':
+        qs = qs.filter(manifest_file__isnull=False, invoice_file__isnull=False)
+    elif upload_status == 'missing_required':
+        qs = qs.filter(Q(manifest_file__isnull=True) | Q(invoice_file__isnull=True))
+    elif upload_status == 'any_missing':
+        qs = qs.filter(
+            Q(manifest_file__isnull=True)
+            | Q(waybill_file__isnull=True)
+            | Q(invoice_file__isnull=True)
+            | Q(comesa_sadc_file__isnull=True)
+        )
+
+    if date_from:
+        qs = qs.filter(created_on__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(created_on__date__lte=date_to)
+
+    filters = {
+        'q': q,
+        'truck_registration': truck_registration,
+        'manifest_number': manifest_number,
+        'cill_number': cill_number,
+        'bill_of_entry_number': bill_of_entry_number,
+        'assessment_number': assessment_number,
+        'receipt_number': receipt_number,
+        'weight_min': request.GET.get('weight_min') or '',
+        'weight_max': request.GET.get('weight_max') or '',
+        'upload_status': upload_status,
+        'date_from': request.GET.get('date_from') or '',
+        'date_to': request.GET.get('date_to') or '',
+    }
+    return qs, filters
+
+
+def _shipment_extra_query(request) -> str:
+    params = request.GET.copy()
+    params.pop('page', None)
+    return params.urlencode()
+
+
+@login_required
+def shipment_not_registered_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.NOT_REGISTERED,
+        'Not Yet Registered',
+        'Waiting for documentation.',
+        'fas fa-truck',
+    )
+
+
+@login_required
+def shipment_registered_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.REGISTERED,
+        'Registered',
+        'Waiting assessment stage.',
+        'fas fa-clipboard-check',
+    )
+
+
+@login_required
+def shipment_assessed_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.ASSESSED,
+        'Assessed',
+        'Waiting payment.',
+        'fas fa-scale-balanced',
+    )
+
+
+@login_required
+def shipment_paid_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.PAID,
+        'Paid',
+        'Waiting proof of payment.',
+        'fas fa-money-bill-wave',
+    )
+
+
+@login_required
+def shipment_receipted_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.RECEIPTED,
+        'Receipted',
+        'Waiting cross.',
+        'fas fa-receipt',
+    )
+
+
+@login_required
+def shipment_release_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.RELEASE,
+        'Release',
+        'Record exit details.',
+        'fas fa-door-open',
+    )
+
+
+@login_required
+def shipment_completed_list(request):
+    return _shipment_stage_list(
+        request,
+        TruckShipment.Status.COMPLETED,
+        'Completed',
+        'Fully processed shipments.',
+        'fas fa-circle-check',
+    )
+
+
+def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: str):
+    qs = TruckShipment.objects.filter(status=status).order_by('-created_on')
+    qs, filters = _shipment_apply_filters(request, qs)
+
+    per_page = _get_per_page(request)
+    paginator = Paginator(qs, per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'shipments': page_obj,
+        'page_obj': page_obj,
+        'per_page': per_page,
+        'title': title,
+        'subtitle': subtitle,
+        'icon': icon,
+        'status_code': status,
+        'filters': filters,
+        'base_url': request.path,
+        'target_id': 'shipment-cards',
+        'extra_query': _shipment_extra_query(request),
+        'can_add': status == TruckShipment.Status.NOT_REGISTERED,
+        'can_export_documents': status == TruckShipment.Status.COMPLETED,
+    }
+
+    if _is_htmx(request) and _hx_target(request) == 'shipment-cards':
+        return render(request, 'partials/shipments/_cards.html', context)
+
+    return _render_htmx(
+        request,
+        'shipments/shipment_list.html',
+        'partials/shipments/shipment_list.html',
+        context,
+    )
+
+
+@login_required
+def add_shipment(request):
+    if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
+        return render(request, 'partials/modals/shipment_create_form.html', {'values': {}})
+
+    if request.method == 'POST':
+        truck_registration = _clean(request.POST.get('truck_registration'))
+        manifest_number = _clean(request.POST.get('manifest_number'))
+        weight_raw = _clean(request.POST.get('weight_kg'))
+        weight_kg = _parse_decimal(weight_raw)
+
+        manifest_file = request.FILES.get('manifest_file')
+        waybill_file = request.FILES.get('waybill_file')
+        invoice_file = request.FILES.get('invoice_file')
+        comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+
+        errors = []
+        if not truck_registration:
+            errors.append('Truck Registration is required.')
+        if not manifest_number:
+            errors.append('Manifest Number is required.')
+        if weight_kg is None:
+            errors.append('Weight (kg) must be a valid number.')
+
+        values = {
+            'truck_registration': truck_registration,
+            'manifest_number': manifest_number,
+            'weight_kg': weight_raw,
+        }
+
+        if errors:
+            if _is_htmx(request) and _hx_target(request) == 'modal-body':
+                return render(
+                    request,
+                    'partials/modals/shipment_create_form.html',
+                    {'errors': errors, 'values': values},
+                    status=400,
+                )
+            return render(request, 'shipments/shipment_list.html', {'errors': errors})
+
+        shipment = TruckShipment.objects.create(
+            truck_registration=truck_registration,
+            manifest_number=manifest_number,
+            weight_kg=weight_kg,
+            manifest_file=manifest_file,
+            waybill_file=waybill_file,
+            invoice_file=invoice_file,
+            comesa_sadc_file=comesa_sadc_file,
+            status=TruckShipment.Status.NOT_REGISTERED,
+        )
+
+        if _is_htmx(request) and _hx_target(request) == 'modal-body':
+            return _hx_trigger_response({'closeModal': True, 'shipmentsChanged': True})
+        return redirect('shipment_not_registered_list')
+
+    return HttpResponse('Method Not Allowed', status=405)
+
+
+@login_required
+def edit_shipment(request, shipment_id: int):
+    shipment = get_object_or_404(TruckShipment, id=shipment_id)
+
+    if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
+        return render(
+            request,
+            'partials/modals/shipment_edit_form.html',
+            {
+                'shipment': shipment,
+                'next_status': _shipment_next_status(shipment.status),
+                'transition_errors': _shipment_transition_errors(shipment, _shipment_next_status(shipment.status) or ''),
+            },
+        )
+
+    if request.method == 'POST':
+        errors: list[str] = []
+
+        if shipment.status == TruckShipment.Status.NOT_REGISTERED:
+            truck_registration = _clean(request.POST.get('truck_registration'))
+            manifest_number = _clean(request.POST.get('manifest_number'))
+            weight_raw = _clean(request.POST.get('weight_kg'))
+            weight_kg = _parse_decimal(weight_raw)
+
+            if not truck_registration:
+                errors.append('Truck Registration is required.')
+            if not manifest_number:
+                errors.append('Manifest Number is required.')
+            if weight_kg is None:
+                errors.append('Weight (kg) must be a valid number.')
+
+            if not errors:
+                shipment.truck_registration = truck_registration
+                shipment.manifest_number = manifest_number
+                shipment.weight_kg = weight_kg
+
+            # Allow updating uploads at stage 1
+            manifest_file = request.FILES.get('manifest_file')
+            waybill_file = request.FILES.get('waybill_file')
+            invoice_file = request.FILES.get('invoice_file')
+            comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+            if manifest_file:
+                shipment.manifest_file = manifest_file
+            if waybill_file:
+                shipment.waybill_file = waybill_file
+            if invoice_file:
+                shipment.invoice_file = invoice_file
+            if comesa_sadc_file:
+                shipment.comesa_sadc_file = comesa_sadc_file
+
+        elif shipment.status == TruckShipment.Status.REGISTERED:
+            shipment.cill_number = _clean(request.POST.get('cill_number'))
+            shipment.bill_of_entry_number = _clean(request.POST.get('bill_of_entry_number'))
+            shipment.date_registered = _parse_date(request.POST.get('date_registered'))
+
+        elif shipment.status == TruckShipment.Status.ASSESSED:
+            shipment.assessment_number = _clean(request.POST.get('assessment_number'))
+            shipment.date_assessed = _parse_date(request.POST.get('date_assessed'))
+
+        elif shipment.status == TruckShipment.Status.PAID:
+            proof_file = request.FILES.get('proof_of_payment_file')
+            if proof_file:
+                shipment.proof_of_payment_file = proof_file
+
+        elif shipment.status == TruckShipment.Status.RECEIPTED:
+            shipment.receipt_number = _clean(request.POST.get('receipt_number'))
+
+        elif shipment.status == TruckShipment.Status.RELEASE:
+            raw = _clean(request.POST.get('date_exited'))
+            if raw:
+                try:
+                    shipment.date_exited = datetime.strptime(raw, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    errors.append('Date Exited must be a valid date/time.')
+            else:
+                shipment.date_exited = None
+
+        if errors:
+            if _is_htmx(request) and _hx_target(request) == 'modal-body':
+                return render(
+                    request,
+                    'partials/modals/shipment_edit_form.html',
+                    {
+                        'shipment': shipment,
+                        'errors': errors,
+                        'next_status': _shipment_next_status(shipment.status),
+                        'transition_errors': _shipment_transition_errors(shipment, _shipment_next_status(shipment.status) or ''),
+                    },
+                    status=400,
+                )
+            return HttpResponse('Bad Request', status=400)
+
+        shipment.save()
+
+        if _is_htmx(request) and _hx_target(request) == 'modal-body':
+            return _hx_trigger_response({'closeModal': True, 'shipmentsChanged': True})
+        return redirect(request.META.get('HTTP_REFERER', reverse('shipment_not_registered_list')))
+
+    return HttpResponse('Method Not Allowed', status=405)
+
+
+@login_required
+def shipment_uploads(request, shipment_id: int):
+    shipment = get_object_or_404(TruckShipment, id=shipment_id)
+
+    if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
+        return render(request, 'partials/modals/shipment_uploads_form.html', {'shipment': shipment})
+
+    if request.method == 'POST':
+        manifest_file = request.FILES.get('manifest_file')
+        waybill_file = request.FILES.get('waybill_file')
+        invoice_file = request.FILES.get('invoice_file')
+        comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+
+        if manifest_file:
+            shipment.manifest_file = manifest_file
+        if waybill_file:
+            shipment.waybill_file = waybill_file
+        if invoice_file:
+            shipment.invoice_file = invoice_file
+        if comesa_sadc_file:
+            shipment.comesa_sadc_file = comesa_sadc_file
+        shipment.save()
+
+        if _is_htmx(request) and _hx_target(request) == 'modal-body':
+            return _hx_trigger_response({'closeModal': True, 'shipmentsChanged': True})
+        return redirect(request.META.get('HTTP_REFERER', reverse('shipment_not_registered_list')))
+
+    return HttpResponse('Method Not Allowed', status=405)
+
+
+@login_required
+def shipment_details(request, shipment_id: int):
+    shipment = get_object_or_404(TruckShipment.objects.prefetch_related('status_events'), id=shipment_id)
+    events = list(shipment.status_events.all())
+    if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
+        return render(request, 'partials/modals/shipment_details.html', {'shipment': shipment, 'events': events})
+    return HttpResponse('Bad Request', status=400)
+
+
+@login_required
+def shipment_transition(request, shipment_id: int):
+    shipment = get_object_or_404(TruckShipment, id=shipment_id)
+    if request.method != 'POST':
+        return HttpResponse('Method Not Allowed', status=405)
+
+    to_status = _clean(request.POST.get('to_status'))
+    errors = _shipment_transition_errors(shipment, to_status)
+    if errors:
+        if _is_htmx(request) and _hx_target(request) == 'modal-body':
+            return render(
+                request,
+                'partials/modals/shipment_edit_form.html',
+                {
+                    'shipment': shipment,
+                    'errors': errors,
+                    'next_status': _shipment_next_status(shipment.status),
+                    'transition_errors': errors,
+                },
+                status=400,
+            )
+        return HttpResponse('Bad Request', status=400)
+
+    from_status = shipment.status
+    shipment.status = to_status
+    shipment.save()
+    ShipmentStatusEvent.objects.create(
+        shipment=shipment,
+        from_status=from_status,
+        to_status=to_status,
+        changed_by=request.user if request.user.is_authenticated else None,
+    )
+
+    if _is_htmx(request) and _hx_target(request) == 'modal-body':
+        return _hx_trigger_response({'closeModal': True, 'shipmentsChanged': True})
+    return redirect(request.META.get('HTTP_REFERER', reverse('shipment_not_registered_list')))
+
+
+SHIPMENT_FILE_FIELDS = {
+    'manifest_file': 'Manifest',
+    'waybill_file': 'Waybill',
+    'invoice_file': 'Invoice',
+    'comesa_sadc_file': 'COMESA_SADC',
+    'proof_of_payment_file': 'Proof_of_Payment',
+}
+
+
+def _get_shipment_file(shipment: TruckShipment, field: str):
+    if field not in SHIPMENT_FILE_FIELDS:
+        return None
+    return getattr(shipment, field)
+
+
+@login_required
+def shipment_file_preview(request, shipment_id: int, field: str):
+    shipment = get_object_or_404(TruckShipment, id=shipment_id)
+    f = _get_shipment_file(shipment, field)
+    if not f:
+        return HttpResponse('Not Found', status=404)
+    path = f.path
+    content_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+    response = FileResponse(open(path, 'rb'), content_type=content_type)
+    response['Content-Disposition'] = f'inline; filename="{os.path.basename(path)}"'
+    return response
+
+
+@login_required
+def shipment_file_download(request, shipment_id: int, field: str):
+    shipment = get_object_or_404(TruckShipment, id=shipment_id)
+    f = _get_shipment_file(shipment, field)
+    if not f:
+        return HttpResponse('Not Found', status=404)
+    path = f.path
+    content_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+    response = FileResponse(open(path, 'rb'), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(path)}"'
+    return response
+
+
+def _shipment_export_queryset(request):
+    status = _clean(request.GET.get('status'))
+    qs = TruckShipment.objects.all().order_by('-created_on')
+    if status in {s for s, _ in TruckShipment.Status.choices}:
+        qs = qs.filter(status=status)
+    qs, _ = _shipment_apply_filters(request, qs)
+    return qs
+
+
+def _shipment_upload_indicator(file_field) -> str:
+    return 'Uploaded' if file_field else 'Not Uploaded'
+
+
+@login_required
+def shipments_export_excel(request):
+    qs = _shipment_export_queryset(request)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Shipments'
+
+    headers = [
+        'Status',
+        'Truck Registration',
+        'Manifest Number',
+        'Weight (kg)',
+        'Cill Number',
+        'Bill of Entry Number',
+        'Date Registered',
+        'Assessment Number',
+        'Date Assessed',
+        'Receipt Number',
+        'Date Exited',
+        'Created At',
+        'Updated At',
+        'Manifest',
+        'Waybill',
+        'Invoice',
+        'COMESA / SADC',
+        'Proof of Payment',
+    ]
+    ws.append(headers)
+
+    for s in qs:
+        ws.append(
+            [
+                s.get_status_display(),
+                s.truck_registration,
+                s.manifest_number,
+                float(s.weight_kg) if s.weight_kg is not None else '',
+                s.cill_number,
+                s.bill_of_entry_number,
+                s.date_registered.isoformat() if s.date_registered else '',
+                s.assessment_number,
+                s.date_assessed.isoformat() if s.date_assessed else '',
+                s.receipt_number,
+                s.date_exited.isoformat(sep=' ') if s.date_exited else '',
+                s.created_on.isoformat(sep=' '),
+                s.updated_on.isoformat(sep=' '),
+                _shipment_upload_indicator(s.manifest_file),
+                _shipment_upload_indicator(s.waybill_file),
+                _shipment_upload_indicator(s.invoice_file),
+                _shipment_upload_indicator(s.comesa_sadc_file),
+                _shipment_upload_indicator(s.proof_of_payment_file),
+            ]
+        )
+
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    filename = 'shipments_export.xlsx'
+    response = HttpResponse(
+        out.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def _safe_folder_name(value: str) -> str:
+    value = (value or '').strip() or 'Unknown_Truck'
+    keep = []
+    for ch in value:
+        if ch.isalnum() or ch in {'-', '_'}:
+            keep.append(ch)
+        elif ch in {' ', '/'}:
+            keep.append('_')
+    return ''.join(keep)[:80]
+
+
+@login_required
+def shipments_export_documents_zip(request):
+    qs = _shipment_export_queryset(request)
+    qs = qs.filter(status=TruckShipment.Status.COMPLETED)
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+        for s in qs:
+            folder = _safe_folder_name(s.truck_registration)
+            for field, label in SHIPMENT_FILE_FIELDS.items():
+                f = getattr(s, field)
+                if not f:
+                    continue
+                src_path = f.path
+                ext = os.path.splitext(src_path)[1] or ''
+                arcname = f'{folder}/{label}{ext}'
+                try:
+                    zf.write(src_path, arcname=arcname)
+                except FileNotFoundError:
+                    continue
+
+    buf.seek(0)
+    response = HttpResponse(buf.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="completed_shipments_documents.zip"'
+    return response
