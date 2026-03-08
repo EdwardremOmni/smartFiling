@@ -1,2 +1,83 @@
-Venv
-venv
+# ==============================================================
+# Python / Django .gitignore (project-specific)
+# ==============================================================
+
+# --- Virtual environments ---
+Venv/
+venv/
+.venv/
+env/
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python bytecode / caches ---
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+
+# --- Test / coverage artifacts ---
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+.tox/
+.nox/
+nosetests.xml
+
+# --- Type checking / linters / formatters ---
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# --- Logs ---
+*.log
+
+# --- Django local overrides ---
+local_settings.py
+
+# --- Database (SQLite; typically local/dev) ---
+*.sqlite3
+*.sqlite3-journal
+
+# --- Uploads / user-generated content ---
+# Django MEDIA_ROOT (uploaded documents, logos, etc.)
+media/
+prince_shipping_system/media/
+
+# --- Collected static output ---
+# Output of `python manage.py collectstatic`
+staticfiles/
+prince_shipping_system/staticfiles/
+staticfiles.json
+
+# --- Packaging / build artifacts ---
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# --- Jupyter / notebooks ---
+.ipynb_checkpoints/
+
+# --- IDEs / editors ---
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Temporary files ---
+*~
+*.tmp
