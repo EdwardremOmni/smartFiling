@@ -981,7 +981,37 @@ def delete_agreement(request, agreement_id):
 
 @login_required
 def home(request):
-    context = {'title': 'Dashboard'}
+    # Lightweight analytics for the dashboard
+    metrics = {
+        'bills': BillOfEntry.objects.count(),
+        'agreements': Agreement.objects.count(),
+        'documents': InternalDocument.objects.count(),
+        'shipments_total': TruckShipment.objects.count(),
+        'shipments_completed': TruckShipment.objects.filter(status=TruckShipment.Status.COMPLETED).count(),
+        # Manager-only metrics (filled in below)
+        'importers': None,
+        'users': None,
+    }
+
+    if _is_manager(request.user):
+        metrics['importers'] = Importer.objects.count()
+        metrics['users'] = AuthUser.objects.count()
+
+    shipment_stage_counts = {
+        TruckShipment.Status.NOT_REGISTERED: TruckShipment.objects.filter(status=TruckShipment.Status.NOT_REGISTERED).count(),
+        TruckShipment.Status.REGISTERED: TruckShipment.objects.filter(status=TruckShipment.Status.REGISTERED).count(),
+        TruckShipment.Status.ASSESSED: TruckShipment.objects.filter(status=TruckShipment.Status.ASSESSED).count(),
+        TruckShipment.Status.PAID: TruckShipment.objects.filter(status=TruckShipment.Status.PAID).count(),
+        TruckShipment.Status.RECEIPTED: TruckShipment.objects.filter(status=TruckShipment.Status.RECEIPTED).count(),
+        TruckShipment.Status.RELEASE: TruckShipment.objects.filter(status=TruckShipment.Status.RELEASE).count(),
+        TruckShipment.Status.COMPLETED: TruckShipment.objects.filter(status=TruckShipment.Status.COMPLETED).count(),
+    }
+
+    context = {
+        'title': 'Dashboard',
+        'metrics': metrics,
+        'shipment_stage_counts': shipment_stage_counts,
+    }
     return _render_htmx(request, 'home.html', 'partials/home.html', context)
 
 @login_required

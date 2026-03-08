@@ -24,7 +24,11 @@
         <i class="fas fa-users fa-2x text-primary mb-3"></i>
         <h5 class="card-title mb-2">Importers</h5>
         <p class="card-text text-muted mb-3">Manage and view registered importers.</p>
-        <a href="{% url 'importer_list' %}" class="btn btn-sm btn-primary app-btn-primary rounded-pill px-3">Open</a>
+        {% if request.user.is_staff or request.user.is_superuser %}
+          <a href="{% url 'importer_list' %}" class="btn btn-sm btn-primary app-btn-primary rounded-pill px-3">Open</a>
+        {% else %}
+          <span class="badge rounded-pill app-badge-soft">Managers only</span>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -44,7 +48,144 @@
         <i class="fas fa-user-friends fa-2x text-info mb-3"></i>
         <h5 class="card-title mb-2">Users</h5>
         <p class="card-text text-muted mb-3">Manage user accounts for your team.</p>
-        <a href="{% url 'user_list' %}" class="btn btn-sm btn-info rounded-pill px-3 text-white">Open</a>
+        {% if request.user.is_staff or request.user.is_superuser %}
+          <a href="{% url 'user_list' %}" class="btn btn-sm btn-info rounded-pill px-3 text-white">Open</a>
+        {% else %}
+          <span class="badge rounded-pill app-badge-soft">Managers only</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics + Truck Workflow -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="card app-card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="fw-bold mb-0" style="color: var(--app-primary);">
+            <i class="fas fa-chart-line me-2"></i>Analytics
+          </h4>
+          <span class="badge rounded-pill app-badge-soft">Live</span>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="small text-muted">Bills of Entry</div>
+              <div class="fs-4 fw-bold">{{ metrics.bills|default:0 }}</div>
+              <a class="small" href="{% url 'bill_of_entry_list' %}">View</a>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="small text-muted">Agreements</div>
+              <div class="fs-4 fw-bold">{{ metrics.agreements|default:0 }}</div>
+              <a class="small" href="{% url 'agreement_list' %}">View</a>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="small text-muted">Documents</div>
+              <div class="fs-4 fw-bold">{{ metrics.documents|default:0 }}</div>
+              <a class="small" href="{% url 'internal_document_list' %}">View</a>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="small text-muted">Shipments (Total)</div>
+              <div class="fs-4 fw-bold">{{ metrics.shipments_total|default:0 }}</div>
+              <a class="small" href="{% url 'shipment_not_registered_list' %}">Open workflow</a>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="small text-muted">Shipments (Completed)</div>
+              <div class="fs-4 fw-bold">{{ metrics.shipments_completed|default:0 }}</div>
+              <a class="small" href="{% url 'shipment_completed_list' %}">View</a>
+            </div>
+          </div>
+
+          {% if metrics.importers is not None %}
+            <div class="col-6">
+              <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+                <div class="small text-muted">Importers</div>
+                <div class="fs-4 fw-bold">{{ metrics.importers|default:0 }}</div>
+                <a class="small" href="{% url 'importer_list' %}">View</a>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded-4" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+                <div class="small text-muted">Users</div>
+                <div class="fs-4 fw-bold">{{ metrics.users|default:0 }}</div>
+                <a class="small" href="{% url 'user_list' %}">View</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card app-card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="fw-bold mb-0" style="color: var(--app-primary);">
+            <i class="fas fa-truck-fast me-2"></i>Truck Workflow
+          </h4>
+          <a class="btn btn-sm btn-primary app-btn-primary rounded-pill px-3" href="{% url 'shipment_not_registered_list' %}">
+            Open
+          </a>
+        </div>
+        <div class="text-muted small mb-3">Jump to a stage and see how many trucks are currently there.</div>
+
+        <div class="row g-2">
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_not_registered_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-truck me-2 text-primary"></i>Not Yet Registered</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.NOT_REGISTERED|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_registered_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-clipboard-check me-2 text-primary"></i>Registered</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.REGISTERED|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_assessed_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-scale-balanced me-2 text-primary"></i>Assessed</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.ASSESSED|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_paid_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-money-bill-wave me-2 text-primary"></i>Paid</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.PAID|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_receipted_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-receipt me-2 text-primary"></i>Receipted</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.RECEIPTED|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_release_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-door-open me-2 text-primary"></i>Release</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.RELEASE|default:0 }}</span>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_completed_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
+              <div class="fw-semibold"><i class="fas fa-circle-check me-2 text-primary"></i>Completed</div>
+              <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.COMPLETED|default:0 }}</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
