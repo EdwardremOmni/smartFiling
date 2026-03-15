@@ -23,6 +23,15 @@
 
     <div class="row g-3">
       <div class="col-md-6">
+        <label class="form-label fw-semibold">Client Name <span class="text-muted">(Required)</span></label>
+        <select class="form-select" name="importer" required>
+          <option value="" {% if not values.importer %}selected{% endif %}>Select Client</option>
+          {% for importer in importers %}
+            <option value="{{ importer.id }}" {% if values.importer == importer.id|stringformat:'s' %}selected{% endif %}>{{ importer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
         <label class="form-label fw-semibold">Truck Registration</label>
         <input class="form-control" type="text" name="truck_registration" value="{{ values.truck_registration|default:'' }}" autofocus />
       </div>

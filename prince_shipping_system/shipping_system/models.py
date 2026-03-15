@@ -86,6 +86,15 @@ class TruckShipment(models.Model):
         RELEASE = 'RELEASE', 'Release'
         COMPLETED = 'COMPLETED', 'Completed'
 
+    # Client
+    importer = models.ForeignKey(
+        Importer,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='truck_shipments',
+    )
+
     # Stage 1: Waiting for Documentation
     truck_registration = models.CharField(max_length=50, blank=True)
     container_number = models.CharField(max_length=100, blank=True)

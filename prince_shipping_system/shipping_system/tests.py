@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from openpyxl import load_workbook
 
-from .models import TruckShipment, ShipmentStatusEvent
+from .models import Importer, TruckShipment, ShipmentStatusEvent
 
 
 def _uploaded(name: str, content: bytes = b'test') -> SimpleUploadedFile:
@@ -36,9 +36,12 @@ class ClearanceWorkflowTests(TestCase):
 	def setUp(self):
 		self.user = User.objects.create_user(username='tester', password='pass12345')
 		self.client.force_login(self.user)
+		self.importer = Importer.objects.create(name='Client A')
+		self.importer_b = Importer.objects.create(name='Client B')
 
 	def _create_stage1_shipment(self, **kwargs) -> TruckShipment:
 		defaults = {
+			'importer': self.importer,
 			'truck_registration': 'TRUCK 1',
 			'container_number': 'CONT/123',
 			'bill_of_lading_number': 'BOL-001',
@@ -66,6 +69,7 @@ class ClearanceWorkflowTests(TestCase):
 		resp = self.client.post(
 			url,
 			data={
+				'importer': str(self.importer.id),
 				'truck_registration': '',
 				'container_number': '',
 				'bill_of_lading_number': '',
@@ -81,6 +85,7 @@ class ClearanceWorkflowTests(TestCase):
 		s = TruckShipment.objects.first()
 		assert s is not None
 		self.assertEqual(s.status, TruckShipment.Status.NOT_REGISTERED)
+		self.assertEqual(s.importer_id, self.importer.id)
 		self.assertEqual(s.truck_registration, '')
 		self.assertEqual(s.container_number, '')
 		self.assertEqual(s.bill_of_lading_number, '')
@@ -88,6 +93,20 @@ class ClearanceWorkflowTests(TestCase):
 		self.assertIsNone(s.weight_kg)
 		self.assertIsNone(s.eta_date)
 		self.assertIsNone(s.duty_calculation_amount)
+
+	def test_create_shipment_requires_importer(self):
+		url = reverse('add_shipment')
+		resp = self.client.post(
+			url,
+			data={
+				'importer': '',
+				'truck_registration': 'TRUCK',
+				'container_number': 'CONT',
+			},
+			**{'HTTP_HX_REQUEST': 'true', 'HTTP_HX_TARGET': 'modal-body'},
+		)
+		self.assertEqual(resp.status_code, 400)
+		self.assertEqual(TruckShipment.objects.count(), 0)
 
 	def test_transition_stage1_requires_bol_manifest_weight_eta_and_duty(self):
 		s = self._create_stage1_shipment(
@@ -229,6 +248,30 @@ class ClearanceWorkflowTests(TestCase):
 		self.assertEqual(page.paginator.count, 1)
 		self.assertEqual(page.object_list[0].container_number, 'C2')
 
+	def test_filter_by_importer(self):
+		s1 = self._create_stage1_shipment(container_number='I1', importer=self.importer)
+		s2 = self._create_stage1_shipment(container_number='I2', importer=self.importer_b)
+		self.assertTrue(all([s1, s2]))
+
+		url = reverse('shipment_not_registered_list')
+		resp = self.client.get(url, {'importer': str(self.importer_b.id)}, **{'HTTP_HX_REQUEST': 'true'})
+		self.assertEqual(resp.status_code, 200)
+		page = resp.context['page_obj']
+		self.assertEqual(page.paginator.count, 1)
+		self.assertEqual(page.object_list[0].id, s2.id)
+
+	def test_search_q_matches_importer_name(self):
+		s1 = self._create_stage1_shipment(container_number='Q1', importer=self.importer)
+		s2 = self._create_stage1_shipment(container_number='Q2', importer=self.importer_b)
+		self.assertTrue(all([s1, s2]))
+
+		url = reverse('shipment_not_registered_list')
+		resp = self.client.get(url, {'q': 'Client B'}, **{'HTTP_HX_REQUEST': 'true'})
+		self.assertEqual(resp.status_code, 200)
+		page = resp.context['page_obj']
+		self.assertEqual(page.paginator.count, 1)
+		self.assertEqual(page.object_list[0].id, s2.id)
+
 	def test_excel_export_contains_new_headers(self):
 		self._create_stage1_shipment(container_number='EX-1')
 		url = reverse('shipments_export_excel')
@@ -242,6 +285,7 @@ class ClearanceWorkflowTests(TestCase):
 		wb = load_workbook(io.BytesIO(resp.content))
 		ws = wb.active
 		headers = [cell.value for cell in ws[1]]
+		self.assertIn('Client Name', headers)
 		self.assertIn('Container Number', headers)
 		self.assertIn('Bill of Lading Number', headers)
 		self.assertIn('ETA Date', headers)
@@ -250,6 +294,7 @@ class ClearanceWorkflowTests(TestCase):
 
 	def test_completed_zip_export_nests_truck_and_container(self):
 		s = self._create_stage1_shipment(
+			importer=None,
 			truck_registration='TRUCK X',
 			container_number='CONT/ZIP',
 			status=TruckShipment.Status.COMPLETED,
@@ -269,6 +314,27 @@ class ClearanceWorkflowTests(TestCase):
 		# safe folder name: spaces and slashes become underscores
 		self.assertIn('TRUCK_X/CONT_ZIP/Invoice.pdf', names)
 		self.assertIn('TRUCK_X/CONT_ZIP/Release_Order.pdf', names)
+
+	def test_completed_zip_export_includes_client_folder_when_present(self):
+		s = self._create_stage1_shipment(
+			importer=self.importer,
+			truck_registration='TRUCK X',
+			container_number='CONT/ZIP',
+			status=TruckShipment.Status.COMPLETED,
+		)
+		s.invoice_file = _uploaded('invoice.pdf')
+		s.release_order_file = _uploaded('release.pdf')
+		s.save()
+
+		url = reverse('shipments_export_documents_zip')
+		resp = self.client.get(url)
+		self.assertEqual(resp.status_code, 200)
+
+		with zipfile.ZipFile(io.BytesIO(resp.content), 'r') as zf:
+			names = set(zf.namelist())
+
+		self.assertIn('Client_A/TRUCK_X/CONT_ZIP/Invoice.pdf', names)
+		self.assertIn('Client_A/TRUCK_X/CONT_ZIP/Release_Order.pdf', names)
 
 	def test_zimra_csv_export_completed_only_and_respects_filters(self):
 		completed_a = self._create_stage1_shipment(
@@ -313,5 +379,6 @@ class ClearanceWorkflowTests(TestCase):
 		url = reverse('shipments_in_progress_list')
 		resp = self.client.get(url, **{'HTTP_HX_REQUEST': 'true'})
 		self.assertEqual(resp.status_code, 200)
+		self.assertTrue(resp.context['can_export_excel'])
 		page = resp.context['page_obj']
 		self.assertEqual(page.paginator.count, 2)

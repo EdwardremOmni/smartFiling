@@ -1146,6 +1146,7 @@ def _shipment_transition_errors(shipment: TruckShipment, to_status: str) -> list
 
 def _shipment_apply_filters(request, qs):
     q = _clean(request.GET.get('q'))
+    importer_id = _clean(request.GET.get('importer'))
     truck_registration = _clean(request.GET.get('truck_registration'))
     container_number = _clean(request.GET.get('container_number'))
     container_numbers_raw = _clean(request.GET.get('container_numbers'))
@@ -1178,6 +1179,7 @@ def _shipment_apply_filters(request, qs):
         qs = qs.filter(
             Q(truck_registration__icontains=q)
             | Q(container_number__icontains=q)
+            | Q(importer__name__icontains=q)
             | Q(bill_of_lading_number__icontains=q)
             | Q(manifest_number__icontains=q)
             | Q(cill_number__icontains=q)
@@ -1185,6 +1187,12 @@ def _shipment_apply_filters(request, qs):
             | Q(assessment_number__icontains=q)
             | Q(receipt_number__icontains=q)
         )
+    if importer_id:
+        try:
+            qs = qs.filter(importer_id=int(importer_id))
+        except ValueError:
+            # Ignore invalid values rather than raising
+            pass
     if truck_registration:
         qs = qs.filter(truck_registration__icontains=truck_registration)
     if container_number:
@@ -1259,6 +1267,7 @@ def _shipment_apply_filters(request, qs):
 
     filters = {
         'q': q,
+        'importer': importer_id,
         'truck_registration': truck_registration,
         'container_number': container_number,
         'container_numbers': container_numbers_raw or '',
@@ -1371,6 +1380,8 @@ def shipments_in_progress_list(request):
     qs = TruckShipment.objects.all().order_by('-created_on')
     qs, filters = _shipment_apply_filters(request, qs)
 
+    importers = Importer.objects.all().order_by('name')
+
     per_page = _get_per_page(request)
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -1384,12 +1395,13 @@ def shipments_in_progress_list(request):
         'icon': 'fas fa-hourglass-half',
         'status_code': '',
         'filters': filters,
+        'importers': importers,
         'base_url': request.path,
         'target_id': 'shipment-cards',
         'list_partial': 'partials/shipments/_cards.html',
         'extra_query': _shipment_extra_query(request),
         'can_add': False,
-        'can_export_excel': False,
+        'can_export_excel': True,
         'can_export_documents': False,
         'document_type_options': _shipment_document_type_options(),
     }
@@ -1409,6 +1421,8 @@ def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: 
     qs = TruckShipment.objects.filter(status=status).order_by('-created_on')
     qs, filters = _shipment_apply_filters(request, qs)
 
+    importers = Importer.objects.all().order_by('name')
+
     per_page = _get_per_page(request)
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -1422,6 +1436,7 @@ def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: 
         'icon': icon,
         'status_code': status,
         'filters': filters,
+        'importers': importers,
         'base_url': request.path,
         'target_id': 'shipment-cards',
         'list_partial': 'partials/shipments/_cards.html',
@@ -1446,9 +1461,18 @@ def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: 
 @login_required
 def add_shipment(request):
     if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
-        return render(request, 'partials/modals/shipment_create_form.html', {'values': {}})
+        importers = Importer.objects.all().order_by('name')
+        return render(
+            request,
+            'partials/modals/shipment_create_form.html',
+            {
+                'values': {},
+                'importers': importers,
+            },
+        )
 
     if request.method == 'POST':
+        importer_id = _clean(request.POST.get('importer'))
         truck_registration = _clean(request.POST.get('truck_registration'))
         container_number = _clean(request.POST.get('container_number'))
         bill_of_lading_number = _clean(request.POST.get('bill_of_lading_number'))
@@ -1472,6 +1496,14 @@ def add_shipment(request):
         cbca_coc_certificate_file = request.FILES.get('cbca_coc_certificate_file')
 
         errors = []
+        importer_obj = None
+        if not importer_id:
+            errors.append('Client Name is required.')
+        else:
+            try:
+                importer_obj = Importer.objects.get(id=importer_id)
+            except (Importer.DoesNotExist, ValueError):
+                errors.append('Client Name must be a valid importer.')
         if weight_raw and weight_kg is None:
             errors.append('Weight (kg) must be a valid number.')
         if request.POST.get('eta_date') and not eta_date:
@@ -1480,6 +1512,7 @@ def add_shipment(request):
             errors.append('Duty Calculation Amount (USD) must be a valid number.')
 
         values = {
+            'importer': importer_id,
             'truck_registration': truck_registration,
             'container_number': container_number,
             'bill_of_lading_number': bill_of_lading_number,
@@ -1491,15 +1524,17 @@ def add_shipment(request):
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
+                importers = Importer.objects.all().order_by('name')
                 return render(
                     request,
                     'partials/modals/shipment_create_form.html',
-                    {'errors': errors, 'values': values},
+                    {'errors': errors, 'values': values, 'importers': importers},
                     status=400,
                 )
             return render(request, 'shipments/shipment_list.html', {'errors': errors})
 
         shipment = TruckShipment.objects.create(
+            importer=importer_obj,
             truck_registration=truck_registration,
             container_number=container_number,
             bill_of_lading_number=bill_of_lading_number,
@@ -1533,11 +1568,13 @@ def edit_shipment(request, shipment_id: int):
     shipment = get_object_or_404(TruckShipment, id=shipment_id)
 
     if _is_htmx(request) and request.method == 'GET' and _hx_target(request) == 'modal-body':
+        importers = Importer.objects.all().order_by('name')
         return render(
             request,
             'partials/modals/shipment_edit_form.html',
             {
                 'shipment': shipment,
+                'importers': importers,
                 'next_status': _shipment_next_status(shipment.status),
                 'transition_errors': _shipment_transition_errors(shipment, _shipment_next_status(shipment.status) or ''),
             },
@@ -1545,6 +1582,14 @@ def edit_shipment(request, shipment_id: int):
 
     if request.method == 'POST':
         errors: list[str] = []
+
+        # Importer can be updated at any stage; legacy shipments may remain NULL.
+        importer_id = _clean(request.POST.get('importer'))
+        if importer_id:
+            try:
+                shipment.importer = Importer.objects.get(id=importer_id)
+            except (Importer.DoesNotExist, ValueError):
+                errors.append('Client Name must be a valid importer.')
 
         if shipment.status == TruckShipment.Status.NOT_REGISTERED:
             truck_registration = _clean(request.POST.get('truck_registration'))
@@ -1641,11 +1686,13 @@ def edit_shipment(request, shipment_id: int):
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
+                importers = Importer.objects.all().order_by('name')
                 return render(
                     request,
                     'partials/modals/shipment_edit_form.html',
                     {
                         'shipment': shipment,
+                        'importers': importers,
                         'errors': errors,
                         'next_status': _shipment_next_status(shipment.status),
                         'transition_errors': _shipment_transition_errors(shipment, _shipment_next_status(shipment.status) or ''),
@@ -1845,6 +1892,7 @@ def shipments_export_excel(request):
 
     headers = [
         'Status',
+        'Client Name',
         'Truck Registration',
         'Container Number',
         'Bill of Lading Number',
@@ -1881,6 +1929,7 @@ def shipments_export_excel(request):
         ws.append(
             [
                 s.get_status_display(),
+                s.importer.name if s.importer else '',
                 s.truck_registration,
                 s.container_number,
                 s.bill_of_lading_number,
@@ -2027,7 +2076,11 @@ def shipments_export_documents_zip(request):
         for s in qs:
             truck_folder = _safe_folder_name(s.truck_registration) or 'Unknown_Truck'
             container_folder = _safe_folder_name(s.container_number) or f'Unknown_Container__ID{s.id}'
-            folder = f'{truck_folder}/{container_folder}'
+            if s.importer:
+                client_folder = _safe_folder_name(s.importer.name)
+                folder = f'{client_folder}/{truck_folder}/{container_folder}'
+            else:
+                folder = f'{truck_folder}/{container_folder}'
             for field, label in SHIPMENT_FILE_FIELDS.items():
                 f = getattr(s, field)
                 if not f:

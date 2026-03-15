@@ -83,6 +83,16 @@
       </div>
 
       <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">Client Name</label>
+        <select class="form-select" name="importer">
+          <option value="" {% if not filters.importer %}selected{% endif %}>Any</option>
+          {% for importer in importers %}
+            <option value="{{ importer.id }}" {% if filters.importer == importer.id|stringformat:'s' %}selected{% endif %}>{{ importer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
         <label class="form-label fw-semibold mb-1">Bill of Lading Number</label>
         <input class="form-control" type="text" name="bill_of_lading_number" value="{{ filters.bill_of_lading_number|default:'' }}" />
       </div>

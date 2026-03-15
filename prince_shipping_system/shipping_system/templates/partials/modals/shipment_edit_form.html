@@ -23,6 +23,15 @@
 
     <div class="row g-3">
       <div class="col-md-6">
+        <label class="form-label fw-semibold">Client Name</label>
+        <select class="form-select" name="importer">
+          <option value="" {% if not shipment.importer_id %}selected{% endif %}>Select Client</option>
+          {% for importer in importers %}
+            <option value="{{ importer.id }}" {% if shipment.importer_id == importer.id %}selected{% endif %}>{{ importer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
         <label class="form-label fw-semibold">Truck Registration</label>
         <input class="form-control" type="text" name="truck_registration" value="{{ shipment.truck_registration }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
       </div>
