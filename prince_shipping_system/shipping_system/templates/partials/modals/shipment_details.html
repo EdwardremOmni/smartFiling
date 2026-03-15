@@ -2,23 +2,41 @@
   <div class="d-flex align-items-start justify-content-between app-modal-header">
     <div>
       <h2 class="h4 fw-bold mb-1">Shipment Details</h2>
-      <div class="text-muted small">{{ shipment.truck_registration }} · {{ shipment.get_status_display }}</div>
+      <div class="text-muted small">{{ shipment.container_number|default:shipment.truck_registration }} · {{ shipment.get_status_display }}</div>
     </div>
     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
   </div>
 
   <div class="row g-3">
     <div class="col-md-6">
+      <div class="fw-semibold">Container Number</div>
+      <div class="text-muted">{{ shipment.container_number|default:'—' }}</div>
+    </div>
+    <div class="col-md-6">
       <div class="fw-semibold">Truck Registration</div>
       <div class="text-muted">{{ shipment.truck_registration }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="fw-semibold">Bill of Lading Number</div>
+      <div class="text-muted">{{ shipment.bill_of_lading_number|default:'—' }}</div>
     </div>
     <div class="col-md-6">
       <div class="fw-semibold">Manifest Number</div>
       <div class="text-muted">{{ shipment.manifest_number }}</div>
     </div>
+
     <div class="col-md-6">
       <div class="fw-semibold">Weight (kg)</div>
       <div class="text-muted">{{ shipment.weight_kg }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="fw-semibold">ETA Date</div>
+      <div class="text-muted">{% if shipment.eta_date %}{{ shipment.eta_date }}{% else %}—{% endif %}</div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="fw-semibold">Duty Calculation Amount (USD)</div>
+      <div class="text-muted">{% if shipment.duty_calculation_amount is not None %}{{ shipment.duty_calculation_amount }}{% else %}—{% endif %}</div>
     </div>
     <div class="col-md-6">
       <div class="fw-semibold">Status</div>
@@ -30,6 +48,10 @@
     <div class="col-12">
       <div class="fw-bold mb-2">Stage Data</div>
       <div class="row g-2">
+        <div class="col-md-4"><div class="small text-muted">Container Number</div><div class="fw-semibold">{{ shipment.container_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Bill of Lading Number</div><div class="fw-semibold">{{ shipment.bill_of_lading_number|default:'—' }}</div></div>
+        <div class="col-md-4"><div class="small text-muted">ETA Date</div><div class="fw-semibold">{% if shipment.eta_date %}{{ shipment.eta_date }}{% else %}—{% endif %}</div></div>
+        <div class="col-md-4"><div class="small text-muted">Duty Calculation Amount (USD)</div><div class="fw-semibold">{% if shipment.duty_calculation_amount is not None %}{{ shipment.duty_calculation_amount }}{% else %}—{% endif %}</div></div>
         <div class="col-md-4"><div class="small text-muted">Cill Number</div><div class="fw-semibold">{{ shipment.cill_number|default:'—' }}</div></div>
         <div class="col-md-4"><div class="small text-muted">Bill of Entry Number</div><div class="fw-semibold">{{ shipment.bill_of_entry_number|default:'—' }}</div></div>
         <div class="col-md-4"><div class="small text-muted">Date Registered</div><div class="fw-semibold">{% if shipment.date_registered %}{{ shipment.date_registered }}{% else %}—{% endif %}</div></div>
@@ -57,6 +79,46 @@
           </thead>
           <tbody>
             <tr>
+              <td>Bill of Lading</td>
+              <td>{% if shipment.bill_of_lading_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.bill_of_lading_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'bill_of_lading_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'bill_of_lading_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Packing List</td>
+              <td>{% if shipment.packing_list_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.packing_list_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'packing_list_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'packing_list_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Invoice</td>
+              <td>{% if shipment.invoice_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.invoice_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'invoice_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'invoice_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Importer Tax Clearance</td>
+              <td>{% if shipment.importer_tax_clearance_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.importer_tax_clearance_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'importer_tax_clearance_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'importer_tax_clearance_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
               <td>Manifest</td>
               <td>{% if shipment.manifest_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
               <td class="text-end">
@@ -77,16 +139,6 @@
               </td>
             </tr>
             <tr>
-              <td>Invoice</td>
-              <td>{% if shipment.invoice_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
-              <td class="text-end">
-                {% if shipment.invoice_file %}
-                  <a href="{% url 'shipment_file_preview' shipment.id 'invoice_file' %}" target="_blank">Preview</a>
-                  · <a href="{% url 'shipment_file_download' shipment.id 'invoice_file' %}">Download</a>
-                {% else %}—{% endif %}
-              </td>
-            </tr>
-            <tr>
               <td>COMESA / SADC</td>
               <td>{% if shipment.comesa_sadc_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
               <td class="text-end">
@@ -97,12 +149,62 @@
               </td>
             </tr>
             <tr>
+              <td>License</td>
+              <td>{% if shipment.license_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.license_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'license_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'license_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Permit</td>
+              <td>{% if shipment.permit_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.permit_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'permit_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'permit_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>EMA Certificate</td>
+              <td>{% if shipment.ema_certificate_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.ema_certificate_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'ema_certificate_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'ema_certificate_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>CBCA / COC</td>
+              <td>{% if shipment.cbca_coc_certificate_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.cbca_coc_certificate_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'cbca_coc_certificate_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'cbca_coc_certificate_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
               <td>Proof of Payment</td>
               <td>{% if shipment.proof_of_payment_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
               <td class="text-end">
                 {% if shipment.proof_of_payment_file %}
                   <a href="{% url 'shipment_file_preview' shipment.id 'proof_of_payment_file' %}" target="_blank">Preview</a>
                   · <a href="{% url 'shipment_file_download' shipment.id 'proof_of_payment_file' %}">Download</a>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Release Order</td>
+              <td>{% if shipment.release_order_file %}<span class="text-success">Uploaded</span>{% else %}<span class="text-danger">Not Uploaded</span>{% endif %}</td>
+              <td class="text-end">
+                {% if shipment.release_order_file %}
+                  <a href="{% url 'shipment_file_preview' shipment.id 'release_order_file' %}" target="_blank">Preview</a>
+                  · <a href="{% url 'shipment_file_download' shipment.id 'release_order_file' %}">Download</a>
                 {% else %}—{% endif %}
               </td>
             </tr>

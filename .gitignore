@@ -43,8 +43,8 @@ nosetests.xml
 local_settings.py
 
 # --- Database (SQLite; typically local/dev) ---
-*.sqlite3
-*.sqlite3-journal
+# *.sqlite3
+# *.sqlite3-journal
 
 # --- Uploads / user-generated content ---
 # Django MEDIA_ROOT (uploaded documents, logos, etc.)

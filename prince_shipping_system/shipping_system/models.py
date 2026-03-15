@@ -78,23 +78,47 @@ class Agreement(models.Model):
 
 class TruckShipment(models.Model):
     class Status(models.TextChoices):
-        NOT_REGISTERED = 'NOT_REGISTERED', 'Not Yet Registered – Waiting for Documentation'
-        REGISTERED = 'REGISTERED', 'Registered – Waiting Assessment Stage'
+        NOT_REGISTERED = 'NOT_REGISTERED', 'Waiting for Documentation'
+        REGISTERED = 'REGISTERED', 'Registered – Waiting Assessment'
         ASSESSED = 'ASSESSED', 'Assessed – Waiting Payment'
         PAID = 'PAID', 'Paid – Waiting Proof of Payment'
         RECEIPTED = 'RECEIPTED', 'Receipted – Waiting Cross'
         RELEASE = 'RELEASE', 'Release'
         COMPLETED = 'COMPLETED', 'Completed'
 
-    # Stage 1: Not Yet Registered
-    truck_registration = models.CharField(max_length=50)
-    manifest_number = models.CharField(max_length=100)
-    weight_kg = models.DecimalField(max_digits=12, decimal_places=2)
+    # Stage 1: Waiting for Documentation
+    truck_registration = models.CharField(max_length=50, blank=True)
+    container_number = models.CharField(max_length=100, blank=True)
+    bill_of_lading_number = models.CharField(max_length=100, blank=True)
+    manifest_number = models.CharField(max_length=100, blank=True)
+    weight_kg = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    eta_date = models.DateField(blank=True, null=True)
+    duty_calculation_amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
+    # Stage 1: Mandatory uploads (required for transition)
+    packing_list_file = models.FileField(upload_to='shipments/packing_list/', blank=True, null=True)
+    invoice_file = models.FileField(upload_to='shipments/invoice/', blank=True, null=True)
+    importer_tax_clearance_file = models.FileField(
+        upload_to='shipments/importer_tax_clearance/',
+        blank=True,
+        null=True,
+    )
+
+    # Stage 1: Optional uploads
+    bill_of_lading_file = models.FileField(upload_to='shipments/bill_of_lading/', blank=True, null=True)
     manifest_file = models.FileField(upload_to='shipments/manifest/', blank=True, null=True)
     waybill_file = models.FileField(upload_to='shipments/waybill/', blank=True, null=True)
-    invoice_file = models.FileField(upload_to='shipments/invoice/', blank=True, null=True)
     comesa_sadc_file = models.FileField(upload_to='shipments/comesa_sadc/', blank=True, null=True)
+
+    # Optional control documents
+    license_file = models.FileField(upload_to='shipments/license/', blank=True, null=True)
+    permit_file = models.FileField(upload_to='shipments/permit/', blank=True, null=True)
+    ema_certificate_file = models.FileField(upload_to='shipments/ema_certificate/', blank=True, null=True)
+    cbca_coc_certificate_file = models.FileField(
+        upload_to='shipments/cbca_coc_certificate/',
+        blank=True,
+        null=True,
+    )
 
     # Stage 2: Registered
     cill_number = models.CharField(max_length=100, blank=True)
@@ -113,6 +137,7 @@ class TruckShipment(models.Model):
 
     # Stage 6: Release
     date_exited = models.DateTimeField(blank=True, null=True)
+    release_order_file = models.FileField(upload_to='shipments/release_order/', blank=True, null=True)
 
     # Workflow
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NOT_REGISTERED)
@@ -127,7 +152,7 @@ class TruckShipment(models.Model):
 
     @property
     def stage1_required_uploads_complete(self) -> bool:
-        return bool(self.manifest_file and self.invoice_file)
+        return bool(self.packing_list_file and self.invoice_file and self.importer_tax_clearance_file)
 
 
 class ShipmentStatusEvent(models.Model):

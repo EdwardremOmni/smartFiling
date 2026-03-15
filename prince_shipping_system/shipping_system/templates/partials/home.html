@@ -134,18 +134,18 @@
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h4 class="fw-bold mb-0" style="color: var(--app-primary);">
-            <i class="fas fa-truck-fast me-2"></i>Truck Workflow
+            <i class="fas fa-truck-fast me-2"></i>Cargo / Container Clearance Workflow
           </h4>
           <a class="btn btn-sm btn-primary app-btn-primary rounded-pill px-3" href="{% url 'shipment_not_registered_list' %}">
             Open
           </a>
         </div>
-        <div class="text-muted small mb-3">Jump to a stage and see how many trucks are currently there.</div>
+        <div class="text-muted small mb-3">Jump to a stage and see how many containers are currently there.</div>
 
         <div class="row g-2">
           <div class="col-md-6">
             <a class="d-flex align-items-center justify-content-between p-3 rounded-4" href="{% url 'shipment_not_registered_list' %}" style="border: 1px solid var(--app-border); background: rgba(255,255,255,.72);">
-              <div class="fw-semibold"><i class="fas fa-truck me-2 text-primary"></i>Not Yet Registered</div>
+              <div class="fw-semibold"><i class="fas fa-truck me-2 text-primary"></i>Waiting for Documentation</div>
               <span class="badge rounded-pill app-badge-soft">{{ shipment_stage_counts.NOT_REGISTERED|default:0 }}</span>
             </a>
           </div>

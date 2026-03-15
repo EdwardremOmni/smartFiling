@@ -10,6 +10,7 @@ from .models import (
 )
 from django.contrib.auth.decorators import login_required
 import mimetypes
+import csv
 from django.http import HttpResponse, FileResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User as AuthUser
@@ -1098,10 +1099,24 @@ def _shipment_transition_errors(shipment: TruckShipment, to_status: str) -> list
         return errors
 
     if shipment.status == TruckShipment.Status.NOT_REGISTERED:
-        if not shipment.manifest_file:
-            errors.append('Manifest upload is required to register this shipment.')
+        if not _clean(shipment.truck_registration):
+            errors.append('Truck Registration is required to register this shipment.')
+        if not _clean(shipment.bill_of_lading_number):
+            errors.append('Bill of Lading Number is required to register this shipment.')
+        if not _clean(shipment.manifest_number):
+            errors.append('Manifest Number is required to register this shipment.')
+        if shipment.weight_kg is None:
+            errors.append('Weight (kg) is required to register this shipment.')
+        if not shipment.eta_date:
+            errors.append('ETA Date is required to register this shipment.')
+        if shipment.duty_calculation_amount is None:
+            errors.append('Duty Calculation Amount (USD) is required to register this shipment.')
+        if not shipment.packing_list_file:
+            errors.append('Packing List upload is required to register this shipment.')
         if not shipment.invoice_file:
             errors.append('Invoice upload is required to register this shipment.')
+        if not shipment.importer_tax_clearance_file:
+            errors.append('Importer Tax Clearance upload is required to register this shipment.')
     elif shipment.status == TruckShipment.Status.REGISTERED:
         if not _clean(shipment.cill_number):
             errors.append('Cill Number is required.')
@@ -1123,6 +1138,8 @@ def _shipment_transition_errors(shipment: TruckShipment, to_status: str) -> list
     elif shipment.status == TruckShipment.Status.RELEASE:
         if not shipment.date_exited:
             errors.append('Date Exited is required.')
+        if not shipment.release_order_file:
+            errors.append('Release Order upload is required.')
 
     return errors
 
@@ -1130,6 +1147,9 @@ def _shipment_transition_errors(shipment: TruckShipment, to_status: str) -> list
 def _shipment_apply_filters(request, qs):
     q = _clean(request.GET.get('q'))
     truck_registration = _clean(request.GET.get('truck_registration'))
+    container_number = _clean(request.GET.get('container_number'))
+    container_numbers_raw = _clean(request.GET.get('container_numbers'))
+    bill_of_lading_number = _clean(request.GET.get('bill_of_lading_number'))
     manifest_number = _clean(request.GET.get('manifest_number'))
     cill_number = _clean(request.GET.get('cill_number'))
     bill_of_entry_number = _clean(request.GET.get('bill_of_entry_number'))
@@ -1137,13 +1157,28 @@ def _shipment_apply_filters(request, qs):
     receipt_number = _clean(request.GET.get('receipt_number'))
     weight_min = _parse_decimal(request.GET.get('weight_min'))
     weight_max = _parse_decimal(request.GET.get('weight_max'))
+    eta_from = _parse_date(request.GET.get('eta_from'))
+    eta_to = _parse_date(request.GET.get('eta_to'))
+    duty_min = _parse_decimal(request.GET.get('duty_min'))
+    duty_max = _parse_decimal(request.GET.get('duty_max'))
     upload_status = _clean(request.GET.get('upload_status'))
+    document_type = _clean(request.GET.get('document_type'))
+    document_uploaded = _clean(request.GET.get('document_uploaded'))
     date_from = _parse_date(request.GET.get('date_from'))
     date_to = _parse_date(request.GET.get('date_to'))
+
+    def _file_missing_q(field_name: str) -> Q:
+        return Q(**{f'{field_name}__isnull': True}) | Q(**{field_name: ''})
+
+    container_numbers: list[str] = []
+    if container_numbers_raw:
+        container_numbers = [p.strip() for p in container_numbers_raw.split(',') if p.strip()]
 
     if q:
         qs = qs.filter(
             Q(truck_registration__icontains=q)
+            | Q(container_number__icontains=q)
+            | Q(bill_of_lading_number__icontains=q)
             | Q(manifest_number__icontains=q)
             | Q(cill_number__icontains=q)
             | Q(bill_of_entry_number__icontains=q)
@@ -1152,6 +1187,12 @@ def _shipment_apply_filters(request, qs):
         )
     if truck_registration:
         qs = qs.filter(truck_registration__icontains=truck_registration)
+    if container_number:
+        qs = qs.filter(container_number__icontains=container_number)
+    if container_numbers:
+        qs = qs.filter(container_number__in=container_numbers)
+    if bill_of_lading_number:
+        qs = qs.filter(bill_of_lading_number__icontains=bill_of_lading_number)
     if manifest_number:
         qs = qs.filter(manifest_number__icontains=manifest_number)
     if cill_number:
@@ -1167,16 +1208,48 @@ def _shipment_apply_filters(request, qs):
     if weight_max is not None:
         qs = qs.filter(weight_kg__lte=weight_max)
 
+    if eta_from:
+        qs = qs.filter(eta_date__gte=eta_from)
+    if eta_to:
+        qs = qs.filter(eta_date__lte=eta_to)
+
+    if duty_min is not None:
+        qs = qs.filter(duty_calculation_amount__gte=duty_min)
+    if duty_max is not None:
+        qs = qs.filter(duty_calculation_amount__lte=duty_max)
+
+    if document_type:
+        if document_type in SHIPMENT_FILE_FIELDS:
+            if document_uploaded == 'uploaded':
+                qs = qs.exclude(_file_missing_q(document_type))
+            elif document_uploaded == 'not_uploaded':
+                qs = qs.filter(_file_missing_q(document_type))
+
     if upload_status == 'required_complete':
-        qs = qs.filter(manifest_file__isnull=False, invoice_file__isnull=False)
+        qs = (
+            qs.exclude(_file_missing_q('packing_list_file'))
+            .exclude(_file_missing_q('invoice_file'))
+            .exclude(_file_missing_q('importer_tax_clearance_file'))
+        )
     elif upload_status == 'missing_required':
-        qs = qs.filter(Q(manifest_file__isnull=True) | Q(invoice_file__isnull=True))
+        qs = qs.filter(
+            _file_missing_q('packing_list_file')
+            | _file_missing_q('invoice_file')
+            | _file_missing_q('importer_tax_clearance_file')
+        )
     elif upload_status == 'any_missing':
         qs = qs.filter(
-            Q(manifest_file__isnull=True)
-            | Q(waybill_file__isnull=True)
-            | Q(invoice_file__isnull=True)
-            | Q(comesa_sadc_file__isnull=True)
+            _file_missing_q('bill_of_lading_file')
+            | _file_missing_q('packing_list_file')
+            | _file_missing_q('invoice_file')
+            | _file_missing_q('importer_tax_clearance_file')
+            | _file_missing_q('manifest_file')
+            | _file_missing_q('waybill_file')
+            | _file_missing_q('comesa_sadc_file')
+            | _file_missing_q('license_file')
+            | _file_missing_q('permit_file')
+            | _file_missing_q('ema_certificate_file')
+            | _file_missing_q('cbca_coc_certificate_file')
         )
 
     if date_from:
@@ -1187,6 +1260,9 @@ def _shipment_apply_filters(request, qs):
     filters = {
         'q': q,
         'truck_registration': truck_registration,
+        'container_number': container_number,
+        'container_numbers': container_numbers_raw or '',
+        'bill_of_lading_number': bill_of_lading_number,
         'manifest_number': manifest_number,
         'cill_number': cill_number,
         'bill_of_entry_number': bill_of_entry_number,
@@ -1194,7 +1270,13 @@ def _shipment_apply_filters(request, qs):
         'receipt_number': receipt_number,
         'weight_min': request.GET.get('weight_min') or '',
         'weight_max': request.GET.get('weight_max') or '',
+        'eta_from': request.GET.get('eta_from') or '',
+        'eta_to': request.GET.get('eta_to') or '',
+        'duty_min': request.GET.get('duty_min') or '',
+        'duty_max': request.GET.get('duty_max') or '',
         'upload_status': upload_status,
+        'document_type': document_type,
+        'document_uploaded': document_uploaded,
         'date_from': request.GET.get('date_from') or '',
         'date_to': request.GET.get('date_to') or '',
     }
@@ -1212,8 +1294,8 @@ def shipment_not_registered_list(request):
     return _shipment_stage_list(
         request,
         TruckShipment.Status.NOT_REGISTERED,
-        'Not Yet Registered',
-        'Waiting for documentation.',
+        'Waiting for Documentation',
+        'Capture shipment and container documentation.',
         'fas fa-truck',
     )
 
@@ -1306,6 +1388,7 @@ def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: 
         'extra_query': _shipment_extra_query(request),
         'can_add': status == TruckShipment.Status.NOT_REGISTERED,
         'can_export_documents': status == TruckShipment.Status.COMPLETED,
+        'document_type_options': _shipment_document_type_options(),
     }
 
     if _is_htmx(request) and _hx_target(request) == 'shipment-cards':
@@ -1326,27 +1409,43 @@ def add_shipment(request):
 
     if request.method == 'POST':
         truck_registration = _clean(request.POST.get('truck_registration'))
+        container_number = _clean(request.POST.get('container_number'))
+        bill_of_lading_number = _clean(request.POST.get('bill_of_lading_number'))
         manifest_number = _clean(request.POST.get('manifest_number'))
         weight_raw = _clean(request.POST.get('weight_kg'))
         weight_kg = _parse_decimal(weight_raw)
+        eta_date = _parse_date(request.POST.get('eta_date'))
+        duty_raw = _clean(request.POST.get('duty_calculation_amount'))
+        duty_calculation_amount = _parse_decimal(duty_raw)
 
+        bill_of_lading_file = request.FILES.get('bill_of_lading_file')
+        packing_list_file = request.FILES.get('packing_list_file')
+        importer_tax_clearance_file = request.FILES.get('importer_tax_clearance_file')
         manifest_file = request.FILES.get('manifest_file')
         waybill_file = request.FILES.get('waybill_file')
         invoice_file = request.FILES.get('invoice_file')
         comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+        license_file = request.FILES.get('license_file')
+        permit_file = request.FILES.get('permit_file')
+        ema_certificate_file = request.FILES.get('ema_certificate_file')
+        cbca_coc_certificate_file = request.FILES.get('cbca_coc_certificate_file')
 
         errors = []
-        if not truck_registration:
-            errors.append('Truck Registration is required.')
-        if not manifest_number:
-            errors.append('Manifest Number is required.')
-        if weight_kg is None:
+        if weight_raw and weight_kg is None:
             errors.append('Weight (kg) must be a valid number.')
+        if request.POST.get('eta_date') and not eta_date:
+            errors.append('ETA Date must be a valid date.')
+        if duty_raw and duty_calculation_amount is None:
+            errors.append('Duty Calculation Amount (USD) must be a valid number.')
 
         values = {
             'truck_registration': truck_registration,
+            'container_number': container_number,
+            'bill_of_lading_number': bill_of_lading_number,
             'manifest_number': manifest_number,
             'weight_kg': weight_raw,
+            'eta_date': request.POST.get('eta_date') or '',
+            'duty_calculation_amount': duty_raw,
         }
 
         if errors:
@@ -1361,12 +1460,23 @@ def add_shipment(request):
 
         shipment = TruckShipment.objects.create(
             truck_registration=truck_registration,
+            container_number=container_number,
+            bill_of_lading_number=bill_of_lading_number,
             manifest_number=manifest_number,
-            weight_kg=weight_kg,
+            weight_kg=weight_kg if weight_raw else None,
+            eta_date=eta_date,
+            duty_calculation_amount=duty_calculation_amount,
+            bill_of_lading_file=bill_of_lading_file,
+            packing_list_file=packing_list_file,
             manifest_file=manifest_file,
             waybill_file=waybill_file,
             invoice_file=invoice_file,
             comesa_sadc_file=comesa_sadc_file,
+            importer_tax_clearance_file=importer_tax_clearance_file,
+            license_file=license_file,
+            permit_file=permit_file,
+            ema_certificate_file=ema_certificate_file,
+            cbca_coc_certificate_file=cbca_coc_certificate_file,
             status=TruckShipment.Status.NOT_REGISTERED,
         )
 
@@ -1397,27 +1507,49 @@ def edit_shipment(request, shipment_id: int):
 
         if shipment.status == TruckShipment.Status.NOT_REGISTERED:
             truck_registration = _clean(request.POST.get('truck_registration'))
+            container_number = _clean(request.POST.get('container_number'))
+            bill_of_lading_number = _clean(request.POST.get('bill_of_lading_number'))
             manifest_number = _clean(request.POST.get('manifest_number'))
             weight_raw = _clean(request.POST.get('weight_kg'))
             weight_kg = _parse_decimal(weight_raw)
-
-            if not truck_registration:
-                errors.append('Truck Registration is required.')
-            if not manifest_number:
-                errors.append('Manifest Number is required.')
-            if weight_kg is None:
+            eta_date = _parse_date(request.POST.get('eta_date'))
+            duty_raw = _clean(request.POST.get('duty_calculation_amount'))
+            duty_calculation_amount = _parse_decimal(duty_raw)
+            if weight_raw and weight_kg is None:
                 errors.append('Weight (kg) must be a valid number.')
+            if request.POST.get('eta_date') and not eta_date:
+                errors.append('ETA Date must be a valid date.')
+            if duty_raw and duty_calculation_amount is None:
+                errors.append('Duty Calculation Amount (USD) must be a valid number.')
 
             if not errors:
                 shipment.truck_registration = truck_registration
+                shipment.container_number = container_number
+                shipment.bill_of_lading_number = bill_of_lading_number
                 shipment.manifest_number = manifest_number
-                shipment.weight_kg = weight_kg
+                shipment.weight_kg = weight_kg if weight_raw else None
+                shipment.eta_date = eta_date
+                shipment.duty_calculation_amount = duty_calculation_amount
 
             # Allow updating uploads at stage 1
+            bill_of_lading_file = request.FILES.get('bill_of_lading_file')
+            packing_list_file = request.FILES.get('packing_list_file')
+            importer_tax_clearance_file = request.FILES.get('importer_tax_clearance_file')
             manifest_file = request.FILES.get('manifest_file')
             waybill_file = request.FILES.get('waybill_file')
             invoice_file = request.FILES.get('invoice_file')
             comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+            license_file = request.FILES.get('license_file')
+            permit_file = request.FILES.get('permit_file')
+            ema_certificate_file = request.FILES.get('ema_certificate_file')
+            cbca_coc_certificate_file = request.FILES.get('cbca_coc_certificate_file')
+
+            if bill_of_lading_file:
+                shipment.bill_of_lading_file = bill_of_lading_file
+            if packing_list_file:
+                shipment.packing_list_file = packing_list_file
+            if importer_tax_clearance_file:
+                shipment.importer_tax_clearance_file = importer_tax_clearance_file
             if manifest_file:
                 shipment.manifest_file = manifest_file
             if waybill_file:
@@ -1426,6 +1558,14 @@ def edit_shipment(request, shipment_id: int):
                 shipment.invoice_file = invoice_file
             if comesa_sadc_file:
                 shipment.comesa_sadc_file = comesa_sadc_file
+            if license_file:
+                shipment.license_file = license_file
+            if permit_file:
+                shipment.permit_file = permit_file
+            if ema_certificate_file:
+                shipment.ema_certificate_file = ema_certificate_file
+            if cbca_coc_certificate_file:
+                shipment.cbca_coc_certificate_file = cbca_coc_certificate_file
 
         elif shipment.status == TruckShipment.Status.REGISTERED:
             shipment.cill_number = _clean(request.POST.get('cill_number'))
@@ -1453,6 +1593,10 @@ def edit_shipment(request, shipment_id: int):
                     errors.append('Date Exited must be a valid date/time.')
             else:
                 shipment.date_exited = None
+
+            release_order_file = request.FILES.get('release_order_file')
+            if release_order_file:
+                shipment.release_order_file = release_order_file
 
         if errors:
             if _is_htmx(request) and _hx_target(request) == 'modal-body':
@@ -1486,19 +1630,40 @@ def shipment_uploads(request, shipment_id: int):
         return render(request, 'partials/modals/shipment_uploads_form.html', {'shipment': shipment})
 
     if request.method == 'POST':
+        bill_of_lading_file = request.FILES.get('bill_of_lading_file')
+        packing_list_file = request.FILES.get('packing_list_file')
+        invoice_file = request.FILES.get('invoice_file')
+        importer_tax_clearance_file = request.FILES.get('importer_tax_clearance_file')
         manifest_file = request.FILES.get('manifest_file')
         waybill_file = request.FILES.get('waybill_file')
-        invoice_file = request.FILES.get('invoice_file')
         comesa_sadc_file = request.FILES.get('comesa_sadc_file')
+        license_file = request.FILES.get('license_file')
+        permit_file = request.FILES.get('permit_file')
+        ema_certificate_file = request.FILES.get('ema_certificate_file')
+        cbca_coc_certificate_file = request.FILES.get('cbca_coc_certificate_file')
 
+        if bill_of_lading_file:
+            shipment.bill_of_lading_file = bill_of_lading_file
+        if packing_list_file:
+            shipment.packing_list_file = packing_list_file
+        if invoice_file:
+            shipment.invoice_file = invoice_file
+        if importer_tax_clearance_file:
+            shipment.importer_tax_clearance_file = importer_tax_clearance_file
         if manifest_file:
             shipment.manifest_file = manifest_file
         if waybill_file:
             shipment.waybill_file = waybill_file
-        if invoice_file:
-            shipment.invoice_file = invoice_file
         if comesa_sadc_file:
             shipment.comesa_sadc_file = comesa_sadc_file
+        if license_file:
+            shipment.license_file = license_file
+        if permit_file:
+            shipment.permit_file = permit_file
+        if ema_certificate_file:
+            shipment.ema_certificate_file = ema_certificate_file
+        if cbca_coc_certificate_file:
+            shipment.cbca_coc_certificate_file = cbca_coc_certificate_file
         shipment.save()
 
         if _is_htmx(request) and _hx_target(request) == 'modal-body':
@@ -1556,12 +1721,32 @@ def shipment_transition(request, shipment_id: int):
 
 
 SHIPMENT_FILE_FIELDS = {
+    'bill_of_lading_file': 'Bill_of_Lading',
+    'packing_list_file': 'Packing_List',
+    'invoice_file': 'Invoice',
+    'importer_tax_clearance_file': 'Tax_Clearance',
     'manifest_file': 'Manifest',
     'waybill_file': 'Waybill',
-    'invoice_file': 'Invoice',
     'comesa_sadc_file': 'COMESA_SADC',
+    'license_file': 'License',
+    'permit_file': 'Permit',
+    'ema_certificate_file': 'EMA',
+    'cbca_coc_certificate_file': 'CBCA_COC',
     'proof_of_payment_file': 'Proof_of_Payment',
+    'release_order_file': 'Release_Order',
 }
+
+
+def _shipment_document_type_options() -> list[tuple[str, str]]:
+    options: list[tuple[str, str]] = []
+    for field, label in SHIPMENT_FILE_FIELDS.items():
+        display = (label or '').replace('_', ' ').strip() or field
+        if display.upper() == 'COMESA SADC':
+            display = 'COMESA / SADC'
+        if display.upper() == 'CBCA COC':
+            display = 'CBCA / COC'
+        options.append((field, display))
+    return options
 
 
 def _get_shipment_file(shipment: TruckShipment, field: str):
@@ -1620,8 +1805,12 @@ def shipments_export_excel(request):
     headers = [
         'Status',
         'Truck Registration',
+        'Container Number',
+        'Bill of Lading Number',
         'Manifest Number',
         'Weight (kg)',
+        'ETA Date',
+        'Duty Calculation Amount (USD)',
         'Cill Number',
         'Bill of Entry Number',
         'Date Registered',
@@ -1631,11 +1820,19 @@ def shipments_export_excel(request):
         'Date Exited',
         'Created At',
         'Updated At',
+        'Bill of Lading',
+        'Packing List',
+        'Invoice',
+        'Importer Tax Clearance',
         'Manifest',
         'Waybill',
-        'Invoice',
         'COMESA / SADC',
+        'License',
+        'Permit',
+        'EMA Certificate',
+        'CBCA / COC',
         'Proof of Payment',
+        'Release Order',
     ]
     ws.append(headers)
 
@@ -1644,8 +1841,12 @@ def shipments_export_excel(request):
             [
                 s.get_status_display(),
                 s.truck_registration,
+                s.container_number,
+                s.bill_of_lading_number,
                 s.manifest_number,
                 float(s.weight_kg) if s.weight_kg is not None else '',
+                s.eta_date.isoformat() if s.eta_date else '',
+                float(s.duty_calculation_amount) if s.duty_calculation_amount is not None else '',
                 s.cill_number,
                 s.bill_of_entry_number,
                 s.date_registered.isoformat() if s.date_registered else '',
@@ -1655,11 +1856,19 @@ def shipments_export_excel(request):
                 s.date_exited.isoformat(sep=' ') if s.date_exited else '',
                 s.created_on.isoformat(sep=' '),
                 s.updated_on.isoformat(sep=' '),
+                _shipment_upload_indicator(s.bill_of_lading_file),
+                _shipment_upload_indicator(s.packing_list_file),
+                _shipment_upload_indicator(s.invoice_file),
+                _shipment_upload_indicator(s.importer_tax_clearance_file),
                 _shipment_upload_indicator(s.manifest_file),
                 _shipment_upload_indicator(s.waybill_file),
-                _shipment_upload_indicator(s.invoice_file),
                 _shipment_upload_indicator(s.comesa_sadc_file),
+                _shipment_upload_indicator(s.license_file),
+                _shipment_upload_indicator(s.permit_file),
+                _shipment_upload_indicator(s.ema_certificate_file),
+                _shipment_upload_indicator(s.cbca_coc_certificate_file),
                 _shipment_upload_indicator(s.proof_of_payment_file),
+                _shipment_upload_indicator(s.release_order_file),
             ]
         )
 
@@ -1675,8 +1884,89 @@ def shipments_export_excel(request):
     return response
 
 
+@login_required
+def shipments_export_zimra_csv(request):
+    qs = _shipment_export_queryset(request)
+    qs = qs.filter(status=TruckShipment.Status.COMPLETED)
+
+    headers = [
+        'Status',
+        'Truck Registration',
+        'Container Number',
+        'Bill of Lading Number',
+        'Manifest Number',
+        'Weight (kg)',
+        'ETA Date',
+        'Duty Calculation Amount (USD)',
+        'Cill Number',
+        'Bill of Entry Number',
+        'Date Registered',
+        'Assessment Number',
+        'Date Assessed',
+        'Receipt Number',
+        'Date Exited',
+        'Created At',
+        'Updated At',
+        'Bill of Lading',
+        'Packing List',
+        'Invoice',
+        'Importer Tax Clearance',
+        'Manifest',
+        'Waybill',
+        'COMESA / SADC',
+        'License',
+        'Permit',
+        'EMA Certificate',
+        'CBCA / COC',
+        'Proof of Payment',
+        'Release Order',
+    ]
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="zimra_export.csv"'
+    writer = csv.writer(response)
+    writer.writerow(headers)
+    for s in qs:
+        writer.writerow(
+            [
+                s.get_status_display(),
+                s.truck_registration,
+                s.container_number,
+                s.bill_of_lading_number,
+                s.manifest_number,
+                float(s.weight_kg) if s.weight_kg is not None else '',
+                s.eta_date.isoformat() if s.eta_date else '',
+                float(s.duty_calculation_amount) if s.duty_calculation_amount is not None else '',
+                s.cill_number,
+                s.bill_of_entry_number,
+                s.date_registered.isoformat() if s.date_registered else '',
+                s.assessment_number,
+                s.date_assessed.isoformat() if s.date_assessed else '',
+                s.receipt_number,
+                s.date_exited.isoformat(sep=' ') if s.date_exited else '',
+                s.created_on.isoformat(sep=' '),
+                s.updated_on.isoformat(sep=' '),
+                _shipment_upload_indicator(s.bill_of_lading_file),
+                _shipment_upload_indicator(s.packing_list_file),
+                _shipment_upload_indicator(s.invoice_file),
+                _shipment_upload_indicator(s.importer_tax_clearance_file),
+                _shipment_upload_indicator(s.manifest_file),
+                _shipment_upload_indicator(s.waybill_file),
+                _shipment_upload_indicator(s.comesa_sadc_file),
+                _shipment_upload_indicator(s.license_file),
+                _shipment_upload_indicator(s.permit_file),
+                _shipment_upload_indicator(s.ema_certificate_file),
+                _shipment_upload_indicator(s.cbca_coc_certificate_file),
+                _shipment_upload_indicator(s.proof_of_payment_file),
+                _shipment_upload_indicator(s.release_order_file),
+            ]
+        )
+
+    return response
+
+
 def _safe_folder_name(value: str) -> str:
-    value = (value or '').strip() or 'Unknown_Truck'
+    value = (value or '').strip() or 'Unknown'
     keep = []
     for ch in value:
         if ch.isalnum() or ch in {'-', '_'}:
@@ -1694,7 +1984,9 @@ def shipments_export_documents_zip(request):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
         for s in qs:
-            folder = _safe_folder_name(s.truck_registration)
+            truck_folder = _safe_folder_name(s.truck_registration) or 'Unknown_Truck'
+            container_folder = _safe_folder_name(s.container_number) or f'Unknown_Container__ID{s.id}'
+            folder = f'{truck_folder}/{container_folder}'
             for field, label in SHIPMENT_FILE_FIELDS.items():
                 f = getattr(s, field)
                 if not f:

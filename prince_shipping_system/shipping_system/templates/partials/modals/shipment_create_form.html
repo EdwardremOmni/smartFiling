@@ -1,8 +1,8 @@
 <div class="p-4 app-modal">
   <div class="d-flex align-items-start justify-content-between app-modal-header">
     <div>
-      <h2 class="h4 fw-bold mb-1">Add Truck/Shipment</h2>
-      <div class="text-muted small">Create a new shipment and optionally upload initial documents.</div>
+      <h2 class="h4 fw-bold mb-1">Add Container / Shipment</h2>
+      <div class="text-muted small">Create a new clearance record and optionally upload documents.</div>
     </div>
     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
   </div>
@@ -24,34 +24,81 @@
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label fw-semibold">Truck Registration</label>
-        <input class="form-control" type="text" name="truck_registration" value="{{ values.truck_registration|default:'' }}" required autofocus />
+        <input class="form-control" type="text" name="truck_registration" value="{{ values.truck_registration|default:'' }}" autofocus />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Container Number</label>
+        <input class="form-control" type="text" name="container_number" value="{{ values.container_number|default:'' }}" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Bill of Lading Number</label>
+        <input class="form-control" type="text" name="bill_of_lading_number" value="{{ values.bill_of_lading_number|default:'' }}" />
       </div>
       <div class="col-md-6">
         <label class="form-label fw-semibold">Manifest Number</label>
-        <input class="form-control" type="text" name="manifest_number" value="{{ values.manifest_number|default:'' }}" required />
+        <input class="form-control" type="text" name="manifest_number" value="{{ values.manifest_number|default:'' }}" />
       </div>
       <div class="col-md-6">
         <label class="form-label fw-semibold">Weight (kg)</label>
-        <input class="form-control" type="number" step="0.01" name="weight_kg" value="{{ values.weight_kg|default:'' }}" required />
+        <input class="form-control" type="number" step="0.01" name="weight_kg" value="{{ values.weight_kg|default:'' }}" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">ETA Date</label>
+        <input class="form-control" type="date" name="eta_date" value="{{ values.eta_date|default:'' }}" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Duty Calculation Amount (USD)</label>
+        <input class="form-control" type="number" step="0.01" name="duty_calculation_amount" value="{{ values.duty_calculation_amount|default:'' }}" />
       </div>
 
       <div class="col-12"><hr class="my-1" /></div>
 
       <div class="col-md-6">
-        <label class="form-label fw-semibold">Manifest (optional upload)</label>
-        <input class="form-control" type="file" name="manifest_file" />
+        <label class="form-label fw-semibold">Packing List <span class="text-muted">(Required)</span></label>
+        <input class="form-control" type="file" name="packing_list_file" />
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold">Waybill (optional upload)</label>
-        <input class="form-control" type="file" name="waybill_file" />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold">Invoice (optional upload)</label>
+        <label class="form-label fw-semibold">Invoice <span class="text-muted">(Required)</span></label>
         <input class="form-control" type="file" name="invoice_file" />
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold">COMESA / SADC Document (optional upload)</label>
+        <label class="form-label fw-semibold">Importer Tax Clearance <span class="text-muted">(Required)</span></label>
+        <input class="form-control" type="file" name="importer_tax_clearance_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Bill of Lading / Consignment / Airway Bill <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="bill_of_lading_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Manifest <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="manifest_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Waybill <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="waybill_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">COMESA / SADC Document <span class="text-muted">(Optional)</span></label>
         <input class="form-control" type="file" name="comesa_sadc_file" />
+      </div>
+
+      <div class="col-12"><hr class="my-1" /></div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">License <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="license_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Permit <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="permit_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">EMA Certificate <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="ema_certificate_file" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">CBCA / COC Certificate <span class="text-muted">(Optional)</span></label>
+        <input class="form-control" type="file" name="cbca_coc_certificate_file" />
       </div>
     </div>
 

@@ -75,6 +75,7 @@ urlpatterns = [
     path('shipments/<int:shipment_id>/files/<str:field>/download/', views.shipment_file_download, name='shipment_file_download'),
 
     path('shipments/export/excel/', views.shipments_export_excel, name='shipments_export_excel'),
+    path('shipments/completed/export/zimra/', views.shipments_export_zimra_csv, name='shipments_export_zimra_csv'),
     path('shipments/completed/export/documents/', views.shipments_export_documents_zip, name='shipments_export_documents_zip'),
     path('my-account/', views.my_account, name='my_account'),
     path('my-account/edit/', views.edit_user_details, name='edit_user_details'),

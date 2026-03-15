@@ -14,7 +14,7 @@
         hx-target="#modal-body"
         hx-push-url="false"
       >
-        <i class="fas fa-plus me-2"></i>Add Truck/Shipment
+        <i class="fas fa-plus me-2"></i>Add Container / Shipment
       </a>
     {% endif %}
 
@@ -33,6 +33,14 @@
         hx-boost="false"
       >
         <i class="fas fa-file-zipper me-2"></i>Export Documents (ZIP)
+      </a>
+
+      <a
+        class="btn btn-outline-dark rounded-pill px-4"
+        href="{% url 'shipments_export_zimra_csv' %}?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}status={{ status_code }}"
+        hx-boost="false"
+      >
+        <i class="fas fa-file-csv me-2"></i>Export ZIMRA (CSV)
       </a>
     {% endif %}
   </div>
@@ -60,9 +68,19 @@
             type="search"
             name="q"
             value="{{ filters.q|default:'' }}"
-            placeholder="Search truck, manifest, refs..."
+            placeholder="Search container, truck, B/L, refs..."
           />
         </div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">Container Number</label>
+        <input class="form-control" type="text" name="container_number" value="{{ filters.container_number|default:'' }}" />
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">Bill of Lading Number</label>
+        <input class="form-control" type="text" name="bill_of_lading_number" value="{{ filters.bill_of_lading_number|default:'' }}" />
       </div>
 
       <div class="col-md-3">
@@ -105,6 +123,25 @@
         </select>
       </div>
 
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">Document Type</label>
+        <select class="form-select" name="document_type">
+          <option value="" {% if not filters.document_type %}selected{% endif %}>Any</option>
+          {% for field, label in document_type_options %}
+            <option value="{{ field }}" {% if filters.document_type == field %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">Document Uploaded</label>
+        <select class="form-select" name="document_uploaded">
+          <option value="" {% if not filters.document_uploaded %}selected{% endif %}>Any</option>
+          <option value="uploaded" {% if filters.document_uploaded == 'uploaded' %}selected{% endif %}>Uploaded</option>
+          <option value="not_uploaded" {% if filters.document_uploaded == 'not_uploaded' %}selected{% endif %}>Not Uploaded</option>
+        </select>
+      </div>
+
       <div class="col-md-2">
         <label class="form-label fw-semibold mb-1">Weight Min (kg)</label>
         <input class="form-control" type="number" step="0.01" name="weight_min" value="{{ filters.weight_min|default:'' }}" />
@@ -123,6 +160,26 @@
       <div class="col-md-3">
         <label class="form-label fw-semibold mb-1">Created To</label>
         <input class="form-control" type="date" name="date_to" value="{{ filters.date_to|default:'' }}" />
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">ETA From</label>
+        <input class="form-control" type="date" name="eta_from" value="{{ filters.eta_from|default:'' }}" />
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-semibold mb-1">ETA To</label>
+        <input class="form-control" type="date" name="eta_to" value="{{ filters.eta_to|default:'' }}" />
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label fw-semibold mb-1">Duty Min (USD)</label>
+        <input class="form-control" type="number" step="0.01" name="duty_min" value="{{ filters.duty_min|default:'' }}" />
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label fw-semibold mb-1">Duty Max (USD)</label>
+        <input class="form-control" type="number" step="0.01" name="duty_max" value="{{ filters.duty_max|default:'' }}" />
       </div>
 
       <div class="col-md-2 ms-md-auto">

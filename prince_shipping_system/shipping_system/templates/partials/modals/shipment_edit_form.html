@@ -27,6 +27,14 @@
         <input class="form-control" type="text" name="truck_registration" value="{{ shipment.truck_registration }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
       </div>
       <div class="col-md-6">
+        <label class="form-label fw-semibold">Container Number</label>
+        <input class="form-control" type="text" name="container_number" value="{{ shipment.container_number }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Bill of Lading Number</label>
+        <input class="form-control" type="text" name="bill_of_lading_number" value="{{ shipment.bill_of_lading_number }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
+      </div>
+      <div class="col-md-6">
         <label class="form-label fw-semibold">Manifest Number</label>
         <input class="form-control" type="text" name="manifest_number" value="{{ shipment.manifest_number }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
       </div>
@@ -34,42 +42,35 @@
         <label class="form-label fw-semibold">Weight (kg)</label>
         <input class="form-control" type="number" step="0.01" name="weight_kg" value="{{ shipment.weight_kg }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
       </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">ETA Date</label>
+        <input class="form-control" type="date" name="eta_date" value="{% if shipment.eta_date %}{{ shipment.eta_date|date:'Y-m-d' }}{% endif %}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Duty Calculation Amount (USD)</label>
+        <input class="form-control" type="number" step="0.01" name="duty_calculation_amount" value="{{ shipment.duty_calculation_amount }}" {% if shipment.status != 'NOT_REGISTERED' %}readonly{% endif %} />
+      </div>
 
       <div class="col-12"><hr class="my-1" /></div>
 
       {% if shipment.status == 'NOT_REGISTERED' %}
         <div class="col-md-6">
-          <label class="form-label fw-semibold">Manifest</label>
+          <label class="form-label fw-semibold">Packing List <span class="text-muted">(Required)</span></label>
           <div class="small mb-1">
-            {% if shipment.manifest_file %}
+            {% if shipment.packing_list_file %}
               <span class="text-success">Uploaded</span>
               <span class="ms-2">
-                <a href="{% url 'shipment_file_preview' shipment.id 'manifest_file' %}" target="_blank">Preview</a>
-                · <a href="{% url 'shipment_file_download' shipment.id 'manifest_file' %}">Download</a>
+                <a href="{% url 'shipment_file_preview' shipment.id 'packing_list_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'packing_list_file' %}">Download</a>
               </span>
             {% else %}
               <span class="text-danger">Not Uploaded</span>
             {% endif %}
           </div>
-          <input class="form-control" type="file" name="manifest_file" />
+          <input class="form-control" type="file" name="packing_list_file" />
         </div>
         <div class="col-md-6">
-          <label class="form-label fw-semibold">Waybill</label>
-          <div class="small mb-1">
-            {% if shipment.waybill_file %}
-              <span class="text-success">Uploaded</span>
-              <span class="ms-2">
-                <a href="{% url 'shipment_file_preview' shipment.id 'waybill_file' %}" target="_blank">Preview</a>
-                · <a href="{% url 'shipment_file_download' shipment.id 'waybill_file' %}">Download</a>
-              </span>
-            {% else %}
-              <span class="text-danger">Not Uploaded</span>
-            {% endif %}
-          </div>
-          <input class="form-control" type="file" name="waybill_file" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Invoice</label>
+          <label class="form-label fw-semibold">Invoice <span class="text-muted">(Required)</span></label>
           <div class="small mb-1">
             {% if shipment.invoice_file %}
               <span class="text-success">Uploaded</span>
@@ -84,7 +85,70 @@
           <input class="form-control" type="file" name="invoice_file" />
         </div>
         <div class="col-md-6">
-          <label class="form-label fw-semibold">COMESA / SADC Document</label>
+          <label class="form-label fw-semibold">Importer Tax Clearance <span class="text-muted">(Required)</span></label>
+          <div class="small mb-1">
+            {% if shipment.importer_tax_clearance_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'importer_tax_clearance_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'importer_tax_clearance_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="importer_tax_clearance_file" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Bill of Lading / Consignment / Airway Bill <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.bill_of_lading_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'bill_of_lading_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'bill_of_lading_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="bill_of_lading_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Manifest <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.manifest_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'manifest_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'manifest_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="manifest_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Waybill <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.waybill_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'waybill_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'waybill_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="waybill_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">COMESA / SADC Document <span class="text-muted">(Optional)</span></label>
           <div class="small mb-1">
             {% if shipment.comesa_sadc_file %}
               <span class="text-success">Uploaded</span>
@@ -97,6 +161,70 @@
             {% endif %}
           </div>
           <input class="form-control" type="file" name="comesa_sadc_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">License <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.license_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'license_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'license_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="license_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Permit <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.permit_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'permit_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'permit_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="permit_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">EMA Certificate <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.ema_certificate_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'ema_certificate_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'ema_certificate_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="ema_certificate_file" />
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">CBCA / COC Certificate <span class="text-muted">(Optional)</span></label>
+          <div class="small mb-1">
+            {% if shipment.cbca_coc_certificate_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'cbca_coc_certificate_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'cbca_coc_certificate_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="cbca_coc_certificate_file" />
         </div>
       {% endif %}
 
@@ -160,6 +288,21 @@
         <div class="col-md-6">
           <label class="form-label fw-semibold">Date Exited</label>
           <input class="form-control" type="datetime-local" name="date_exited" value="{% if shipment.date_exited %}{{ shipment.date_exited|date:'Y-m-d\TH:i' }}{% endif %}" {% if shipment.status != 'RELEASE' %}readonly{% endif %} />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Release Order <span class="text-muted">(Required)</span></label>
+          <div class="small mb-1">
+            {% if shipment.release_order_file %}
+              <span class="text-success">Uploaded</span>
+              <span class="ms-2">
+                <a href="{% url 'shipment_file_preview' shipment.id 'release_order_file' %}" target="_blank">Preview</a>
+                · <a href="{% url 'shipment_file_download' shipment.id 'release_order_file' %}">Download</a>
+              </span>
+            {% else %}
+              <span class="text-danger">Not Uploaded</span>
+            {% endif %}
+          </div>
+          <input class="form-control" type="file" name="release_order_file" {% if shipment.status != 'RELEASE' %}disabled{% endif %} />
         </div>
       {% endif %}
     </div>

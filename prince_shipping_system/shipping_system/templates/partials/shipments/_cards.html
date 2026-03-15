@@ -6,8 +6,8 @@
           <div class="card-body d-flex flex-column">
             <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
               <div>
-                <div class="fw-bold shipment-card-title">{{ shipment.truck_registration }}</div>
-                <div class="text-muted small">Manifest: {{ shipment.manifest_number }}</div>
+                <div class="fw-bold shipment-card-title">{{ shipment.container_number|default:'—' }}</div>
+                <div class="text-muted small">Truck: {{ shipment.truck_registration }} · B/L: {{ shipment.bill_of_lading_number|default:'—' }}</div>
               </div>
               <span class="badge rounded-pill app-badge-soft badge-status badge-status-{{ shipment.status|lower }}">
                 {{ shipment.get_status_display }}
@@ -16,6 +16,7 @@
 
             <div class="small text-muted mb-3">
               Weight: <span class="fw-semibold text-dark">{{ shipment.weight_kg }}</span> kg
+              {% if shipment.eta_date %}<span class="ms-2">· ETA: <span class="fw-semibold text-dark">{{ shipment.eta_date }}</span></span>{% endif %}
             </div>
 
             <div class="mt-auto d-flex flex-wrap gap-2">
@@ -58,15 +59,21 @@
             {% if status_code == 'NOT_REGISTERED' %}
               <div class="mt-3 small">
                 <div>
-                  <span class="fw-semibold">Manifest:</span>
-                  <span class="{% if shipment.manifest_file %}text-success{% else %}text-danger{% endif %}">
-                    {% if shipment.manifest_file %}Uploaded{% else %}Not Uploaded{% endif %}
+                  <span class="fw-semibold">Packing List:</span>
+                  <span class="{% if shipment.packing_list_file %}text-success{% else %}text-danger{% endif %}">
+                    {% if shipment.packing_list_file %}Uploaded{% else %}Not Uploaded{% endif %}
                   </span>
                 </div>
                 <div>
                   <span class="fw-semibold">Invoice:</span>
                   <span class="{% if shipment.invoice_file %}text-success{% else %}text-danger{% endif %}">
                     {% if shipment.invoice_file %}Uploaded{% else %}Not Uploaded{% endif %}
+                  </span>
+                </div>
+                <div>
+                  <span class="fw-semibold">Tax Clearance:</span>
+                  <span class="{% if shipment.importer_tax_clearance_file %}text-success{% else %}text-danger{% endif %}">
+                    {% if shipment.importer_tax_clearance_file %}Uploaded{% else %}Not Uploaded{% endif %}
                   </span>
                 </div>
               </div>
