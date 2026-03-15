@@ -31,7 +31,7 @@
                 <i class="fas fa-pen-to-square me-1"></i>Edit
               </a>
 
-              {% if status_code == 'NOT_REGISTERED' %}
+              {% if shipment.status == 'NOT_REGISTERED' %}
                 <a
                   class="btn btn-outline-secondary btn-sm rounded-pill px-3"
                   href="{% url 'shipment_uploads' shipment.id %}"
@@ -56,7 +56,7 @@
               </a>
             </div>
 
-            {% if status_code == 'NOT_REGISTERED' %}
+            {% if shipment.status == 'NOT_REGISTERED' %}
               <div class="mt-3 small">
                 <div>
                   <span class="fw-semibold">Packing List:</span>

@@ -57,6 +57,7 @@ urlpatterns = [
     path('agreements/<int:agreement_id>/delete/', views.delete_agreement, name='delete_agreement'),
 
     # Truck / Shipment workflow
+    path('shipments/in-progress/', views.shipments_in_progress_list, name='shipments_in_progress_list'),
     path('shipments/not-registered/', views.shipment_not_registered_list, name='shipment_not_registered_list'),
     path('shipments/registered/', views.shipment_registered_list, name='shipment_registered_list'),
     path('shipments/assessed/', views.shipment_assessed_list, name='shipment_assessed_list'),

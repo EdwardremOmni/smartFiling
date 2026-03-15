@@ -304,3 +304,14 @@ class ClearanceWorkflowTests(TestCase):
 		container_idx = headers.index('Container Number')
 		containers = [r[container_idx] for r in rows[1:]]
 		self.assertEqual(containers, ['CONT-A'])
+
+	def test_in_progress_page_includes_completed_shipments_too(self):
+		in_progress = self._create_stage1_shipment(container_number='INPROG', status=TruckShipment.Status.ASSESSED)
+		completed = self._create_stage1_shipment(container_number='DONE', status=TruckShipment.Status.COMPLETED)
+		self.assertTrue(all([in_progress, completed]))
+
+		url = reverse('shipments_in_progress_list')
+		resp = self.client.get(url, **{'HTTP_HX_REQUEST': 'true'})
+		self.assertEqual(resp.status_code, 200)
+		page = resp.context['page_obj']
+		self.assertEqual(page.paginator.count, 2)

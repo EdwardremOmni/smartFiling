@@ -31,6 +31,7 @@
 
       <hr class="my-2" />
       <div class="app-nav-section">Shipments</div>
+      <a href="{% url 'shipments_in_progress_list' %}" class="{% if current == 'shipments_in_progress_list' %}is-active{% endif %}"><i class="fas fa-hourglass-half"></i><span>In Progress</span></a>
       <a href="{% url 'shipment_not_registered_list' %}" class="{% if current == 'shipment_not_registered_list' %}is-active{% endif %}"><i class="fas fa-truck"></i><span>Waiting for Documentation</span></a>
       <a href="{% url 'shipment_registered_list' %}" class="{% if current == 'shipment_registered_list' %}is-active{% endif %}"><i class="fas fa-clipboard-check"></i><span>Registered</span></a>
       <a href="{% url 'shipment_assessed_list' %}" class="{% if current == 'shipment_assessed_list' %}is-active{% endif %}"><i class="fas fa-scale-balanced"></i><span>Assessed</span></a>

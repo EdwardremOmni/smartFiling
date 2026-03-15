@@ -18,13 +18,15 @@
       </a>
     {% endif %}
 
-    <a
-      class="btn btn-outline-primary rounded-pill px-4"
-      href="{% url 'shipments_export_excel' %}?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}status={{ status_code }}"
-      hx-boost="false"
-    >
-      <i class="fas fa-file-excel me-2"></i>Export to Excel
-    </a>
+    {% if can_export_excel %}
+      <a
+        class="btn btn-outline-primary rounded-pill px-4"
+        href="{% url 'shipments_export_excel' %}?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}status={{ status_code }}"
+        hx-boost="false"
+      >
+        <i class="fas fa-file-excel me-2"></i>Export to Excel
+      </a>
+    {% endif %}
 
     {% if can_export_documents %}
       <a
@@ -52,12 +54,14 @@
       id="shipment-filters"
       class="row g-2 align-items-end mb-3"
       hx-get="{{ base_url }}"
-      hx-target="#shipment-cards"
+      hx-target="#{{ target_id }}"
       hx-swap="innerHTML"
       hx-push-url="true"
       hx-trigger="keyup changed delay:300ms from:input, change from:select, change from:input"
     >
-      <input type="hidden" name="status" value="{{ status_code }}" />
+      {% if status_code %}
+        <input type="hidden" name="status" value="{{ status_code }}" />
+      {% endif %}
 
       <div class="col-md-4">
         <label class="form-label fw-semibold mb-1">Search</label>
@@ -199,8 +203,8 @@
       </div>
     </form>
 
-    <div id="shipment-cards">
-      {% include 'partials/shipments/_cards.html' %}
+    <div id="{{ target_id }}">
+      {% include list_partial %}
     </div>
   </div>
 </div>

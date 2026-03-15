@@ -1366,6 +1366,45 @@ def shipment_completed_list(request):
     )
 
 
+@login_required
+def shipments_in_progress_list(request):
+    qs = TruckShipment.objects.all().order_by('-created_on')
+    qs, filters = _shipment_apply_filters(request, qs)
+
+    per_page = _get_per_page(request)
+    paginator = Paginator(qs, per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'shipments': page_obj,
+        'page_obj': page_obj,
+        'per_page': per_page,
+        'title': 'In Progress Shipments',
+        'subtitle': 'All shipments that are not yet completed.',
+        'icon': 'fas fa-hourglass-half',
+        'status_code': '',
+        'filters': filters,
+        'base_url': request.path,
+        'target_id': 'shipment-cards',
+        'list_partial': 'partials/shipments/_cards.html',
+        'extra_query': _shipment_extra_query(request),
+        'can_add': False,
+        'can_export_excel': False,
+        'can_export_documents': False,
+        'document_type_options': _shipment_document_type_options(),
+    }
+
+    if _is_htmx(request) and _hx_target(request) == context['target_id']:
+        return render(request, context['list_partial'], context)
+
+    return _render_htmx(
+        request,
+        'shipments/shipment_list.html',
+        'partials/shipments/shipment_list.html',
+        context,
+    )
+
+
 def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: str):
     qs = TruckShipment.objects.filter(status=status).order_by('-created_on')
     qs, filters = _shipment_apply_filters(request, qs)
@@ -1385,8 +1424,10 @@ def _shipment_stage_list(request, status: str, title: str, subtitle: str, icon: 
         'filters': filters,
         'base_url': request.path,
         'target_id': 'shipment-cards',
+        'list_partial': 'partials/shipments/_cards.html',
         'extra_query': _shipment_extra_query(request),
         'can_add': status == TruckShipment.Status.NOT_REGISTERED,
+        'can_export_excel': True,
         'can_export_documents': status == TruckShipment.Status.COMPLETED,
         'document_type_options': _shipment_document_type_options(),
     }
